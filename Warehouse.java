@@ -3,9 +3,13 @@ import java.time.LocalDate;
 
 public class Warehouse {
     private String name;
-
-    private Map<String, Item> itemsByID;
-    private Set<String> stockedIDs;
+    //warehousemanager the sku
+    private Map<Integer, Integer> itemsByID;
+    private ArrayList<ItemID> stockedIDs;
+    private Map<Integer, Date> itemsByExpr;
+    private List<Transaction> transactions;
+    private List<Item> itemsByChrono;
+    //local stock thing
 
     public Warehouse(String name) {
         this.name = name;
@@ -20,13 +24,14 @@ public class Warehouse {
 //add and delete
 
     public void addItem(Item item) {
-        String id = item.getItemID().getID();
-        if (itemsByID.containsKey(id)) {
-            itemsByID.get(id).addStock(item.getStock());
-        } else {
-            itemsByID.put(id, item);
+        int SKU = item.getID();
+        if (!itemsByID.containsKey(SKU)) {
             stockedIDs.add(id);
         }
+        itemsByID.put(SKU,item);
+        itemsByChrono.add(item);
+        if(item.isPerishable())
+            itemsByExpr.put(item,item.getExpr());
     }
 
     public void removeItem(String id, int amount) {
@@ -43,8 +48,8 @@ public class Warehouse {
 
 //search by id, name or keywords
 
-    public Item searchByID(String id) {
-        return itemsByID.get(id);
+    public List<Item> searchByID(int ID){
+        return itemsByID.get(ID);
     }
 
     public List<Item> searchByName(String name) {
