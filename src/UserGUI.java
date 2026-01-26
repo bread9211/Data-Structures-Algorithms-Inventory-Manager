@@ -2,7 +2,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionListener;
-
+import com.formdev.flatlaf.*;
 public class UserGUI {
     private JFrame frame;
     private JTable inventoryTable;
@@ -27,6 +27,8 @@ public class UserGUI {
     private JTextField searchField;
     
     public UserGUI() {
+        FlatLightLaf.setup();
+
         initializeFrame();
         createHeaderPanel();
         createTablePanel();
