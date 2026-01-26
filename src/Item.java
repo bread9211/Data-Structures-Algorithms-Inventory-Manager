@@ -14,7 +14,7 @@ public class Item {
         this(ID,1,date);
     }
     
-    public int removeItem(int quantity, Date current){
+    public int removeItem(int quantity){
         if(amount - quantity > 0){
             amount -= quantity;
             return -1;
@@ -28,7 +28,7 @@ public class Item {
     public int getID(){
         return SKU;
     }
-    public boolean isPerishable(){
-        return false;
+    public Date getPurchased(){
+        return purchaseDate;
     }
 }
