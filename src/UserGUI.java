@@ -99,8 +99,29 @@ public class UserGUI {
     
     private void loadWarehouseInventory(String warehouseName) {
         clearTable();
-        // Items will be added when the warehouse is populated with data
-        // The warehouse dropdown selection is now linked and ready to display items
+        Warehouse warehouse = warehouseMap.get(warehouseName);
+        if (warehouse != null) {
+            // Try to get items from the warehouse
+            try {
+                java.lang.reflect.Field field = Warehouse.class.getDeclaredField("itemsByID");
+                field.setAccessible(true);
+                Map<Integer, Item> itemsByID = (Map<Integer, Item>) field.get(warehouse);
+                
+                for (Item item : itemsByID.values()) {
+                    addInventoryRow(
+                        String.valueOf(item.getID()),
+                        "Item " + item.getID(),
+                        item.getStock(),
+                        0.0,
+                        item.getPurchased() != null ? item.getPurchased().toString() : "N/A",
+                        "Active"
+                    );
+                }
+            } catch (Exception ex) {
+                // If reflection fails, items might not be loaded yet
+                System.err.println("Note: Could not load warehouse items via reflection.");
+            }
+        }
     }
 
     private void toggleTheme() {
@@ -166,10 +187,39 @@ public class UserGUI {
         buttonPanel.add(transferItemButton);
         buttonPanel.add(sortButton);
         
+        // Hook up Add Item button
+        addItemButton.addActionListener(e -> openAddItemDialog());
+        
         actionPanel.add(searchPanel, BorderLayout.NORTH);
         actionPanel.add(buttonPanel, BorderLayout.CENTER);
         
         mainPanel.add(actionPanel, BorderLayout.SOUTH);
+    }
+    
+    private void openAddItemDialog() {
+        String selectedWarehouse = (String) warehouseSelector.getSelectedItem();
+        if (selectedWarehouse == null || selectedWarehouse.equals("Select a Warehouse...")) {
+            JOptionPane.showMessageDialog(frame, "Please select a warehouse first.", "No Warehouse Selected", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        AddItemDialog dialog = new AddItemDialog(frame);
+        dialog.setVisible(true);
+        
+        if (dialog.isConfirmed()) {
+            Warehouse warehouse = warehouseMap.get(selectedWarehouse);
+            if (warehouse != null) {
+                try {
+                    Item newItem = new Item(dialog.getItemID(), dialog.getQuantity(), null);
+                    warehouse.addItem(newItem);
+                    loadWarehouseInventory(selectedWarehouse);
+                    JOptionPane.showMessageDialog(frame, "Item added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(frame, "Error adding item: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    ex.printStackTrace();
+                }
+            }
+        }
     }
     
     private void setupLayout() {
