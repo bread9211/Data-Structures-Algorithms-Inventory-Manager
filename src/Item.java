@@ -12,7 +12,6 @@ public class Item {
         acquiredDate = date;
         instanceID = 0;
     }
-    }
     public Item(int num, Date date){
         this(-1,num,date);
     }
