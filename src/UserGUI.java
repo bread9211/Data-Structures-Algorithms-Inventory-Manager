@@ -3,6 +3,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import com.formdev.flatlaf.*;
+import java.util.*;
 public class UserGUI {
     private JFrame frame;
     private JTable inventoryTable;
@@ -16,17 +17,27 @@ public class UserGUI {
     private JLabel titleLabel;
     private JComboBox<String> warehouseSelector;
     
+    // WarehouseManager reference
+    private WarehouseManager warehouseManager;
+    private Map<String, Warehouse> warehouseMap;
+    
     // Action buttons
     private JButton addItemButton;
     private JButton sellItemButton;
     private JButton transferItemButton;
     private JButton searchButton;
     private JButton sortButton;
+    private JButton themeSwitchButton;
     
     // Search/filter components
     private JTextField searchField;
+
+    // State variables
+    private boolean isDarkMode = false;
     
-    public UserGUI() {
+    public UserGUI(WarehouseManager warehouseManager) {
+        this.warehouseManager = warehouseManager;
+        this.warehouseMap = new HashMap<>();
         FlatLightLaf.setup();
 
         initializeFrame();
@@ -50,18 +61,62 @@ public class UserGUI {
     }
     
     private void createHeaderPanel() {
-        headerPanel = new JPanel();
-        headerPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 15, 5));
+        headerPanel = new JPanel(new BorderLayout(10, 0));
         headerPanel.setBorder(BorderFactory.createTitledBorder("Warehouse Selection"));
-        
+
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 5));
+        leftPanel.setOpaque(false);
         titleLabel = new JLabel("Current Warehouse:");
         warehouseSelector = new JComboBox<>();
         warehouseSelector.addItem("Select a Warehouse...");
-        
-        headerPanel.add(titleLabel);
-        headerPanel.add(warehouseSelector);
-        
+        leftPanel.add(titleLabel);
+        leftPanel.add(warehouseSelector);
+
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 5));
+        rightPanel.setOpaque(false);
+        themeSwitchButton = new JButton("Dark Mode");
+        themeSwitchButton.setFocusPainted(false);
+        themeSwitchButton.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
+        rightPanel.add(themeSwitchButton);
+
+        headerPanel.add(leftPanel, BorderLayout.WEST);
+        headerPanel.add(rightPanel, BorderLayout.EAST);
+
+        themeSwitchButton.addActionListener(e -> toggleTheme());
+        warehouseSelector.addActionListener(e -> onWarehouseSelected());
+
         mainPanel.add(headerPanel, BorderLayout.NORTH);
+    }
+    
+    private void onWarehouseSelected() {
+        String selectedWarehouse = (String) warehouseSelector.getSelectedItem();
+        if (selectedWarehouse != null && !selectedWarehouse.equals("Select a Warehouse...")) {
+            loadWarehouseInventory(selectedWarehouse);
+        } else {
+            clearTable();
+        }
+    }
+    
+    private void loadWarehouseInventory(String warehouseName) {
+        clearTable();
+        // Items will be added when the warehouse is populated with data
+        // The warehouse dropdown selection is now linked and ready to display items
+    }
+
+    private void toggleTheme() {
+        try {
+            if (isDarkMode) {
+                UIManager.setLookAndFeel(new com.formdev.flatlaf.FlatLightLaf());
+                themeSwitchButton.setText("Dark Mode");
+            } else {
+                UIManager.setLookAndFeel(new com.formdev.flatlaf.FlatDarkLaf());
+                themeSwitchButton.setText("Light Mode");
+            }
+            isDarkMode = !isDarkMode;
+            SwingUtilities.updateComponentTreeUI(frame);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
     
     private void createTablePanel() {
@@ -73,7 +128,7 @@ public class UserGUI {
         tableModel = new DefaultTableModel(columnNames, 0);
         inventoryTable = new JTable(tableModel);
         
-        // Make table read-only
+        // Make table read only
         inventoryTable.setDefaultEditor(Object.class, null);
         inventoryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         inventoryTable.getTableHeader().setReorderingAllowed(false);
@@ -136,7 +191,13 @@ public class UserGUI {
         return inventoryTable.getSelectedRow();
     }
     
-    // Method to add warehouse to dropdown
+    // Method to add warehouse to dropdown and store reference
+    public void addWarehouse(String warehouseName, Warehouse warehouse) {
+        warehouseSelector.addItem(warehouseName);
+        warehouseMap.put(warehouseName, warehouse);
+    }
+    
+    // Legacy method for backwards compatibility
     public void addWarehouse(String warehouseName) {
         warehouseSelector.addItem(warehouseName);
     }
@@ -178,5 +239,9 @@ public class UserGUI {
     
     public JFrame getFrame() {
         return frame;
+    }
+    
+    public WarehouseManager getWarehouseManager() {
+        return warehouseManager;
     }
 }
