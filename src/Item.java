@@ -2,18 +2,20 @@ import java.sql.Date;
 
 public class Item {
     private int SKU;
+    private int instanceID;
     protected int amount;
-    private Date purchaseDate;
+    private Date acquiredDate;
     
     public Item(int ID, int num, Date date){
         SKU = ID;
         amount = num;
-        purchaseDate = date;
+        acquiredDate = date;
+        instanceID = 0;
     }
-    public Item(int ID, Date date){
-        this(ID,1,date);
     }
-    
+    public Item(int num, Date date){
+        this(-1,num,date);
+    }
     public int removeItem(int quantity){
         if(amount - quantity > 0){
             amount -= quantity;
@@ -25,10 +27,19 @@ public class Item {
     public int getStock(){
         return amount;
     }
-    public int getID(){
+    public int getSKU(){
         return SKU;
     }
-    public Date getPurchased(){
-        return purchaseDate;
+    public Date getAcquired(){
+        return acquiredDate;
+    }
+    public int getInstance(){
+        return instanceID;
+    }
+    public void setInstance(int newInstance){
+        instanceID = newInstance;
+    }
+    public void setSKU(int ID){
+        SKU = ID;
     }
 }

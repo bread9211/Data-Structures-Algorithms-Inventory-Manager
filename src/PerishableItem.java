@@ -7,8 +7,9 @@ public class PerishableItem extends Item{
         super(SKU,num,pDate);
         exprDate = eDate;
     }
-    public PerishableItem(int SKU, Date pDate, Date eDate){
-        this(SKU,1,pDate,eDate);
+    public PerishableItem(int num, Date pDate, Date eDate){
+        super(num,pDate);
+        exprDate = eDate;
     }
 
     public Date getExpr(){
@@ -28,9 +29,7 @@ public class PerishableItem extends Item{
             amount = 0;
             return quantity - amount;
     }
-
     public boolean isPerishable(){
         return true;
     }
-
 }
