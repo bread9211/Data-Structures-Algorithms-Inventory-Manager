@@ -19,10 +19,18 @@ public class GUITester {
         gui.addWarehouse("Warehouse B", warehouseB);
         gui.addWarehouse("Warehouse C", warehouseC);
         
-        // Add sample inventory items using the GUI directly
-        // Users can select a warehouse and the inventory will be displayed
-        gui.addInventoryRow("ID001", "Apples", 150, 2.50, "2026-02-15", "Good");
-        gui.addInventoryRow("ID002", "Oranges", 200, 3.00, "2026-02-20", "Good");
-        gui.addInventoryRow("ID003", "Bananas", 75, 1.50, "2026-01-28", "Expiring Soon");
+        // Add sample inventory items
+        warehouseA.addItem(new Item(1001, 150, null));
+        warehouseA.addItem(new Item(1002, 200, null));
+        warehouseA.addItem(new Item(1003, 75, null));
+        
+        warehouseB.addItem(new Item(2001, 50, null));
+        warehouseB.addItem(new Item(2002, 30, null));
+        
+        warehouseC.addItem(new Item(3001, 100, null));
+        warehouseC.addItem(new Item(3002, 60, null));
+        
+        // Refresh the inventory display to show all items
+        gui.refreshInventory();
     }
 }

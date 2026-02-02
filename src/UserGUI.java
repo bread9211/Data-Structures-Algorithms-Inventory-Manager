@@ -94,12 +94,16 @@ public class UserGUI {
         if (selectedWarehouse != null && !selectedWarehouse.equals("Select a Warehouse...")) {
             loadWarehouseInventory(selectedWarehouse);
         } else {
-            clearTable();
+            loadAllWarehousesInventory();
         }
     }
     
     private void loadWarehouseInventory(String warehouseName) {
-        clearTable();
+        // Recreate table without warehouse column
+        String[] columnNames = {"Item ID", "Item Name", "Quantity", "Unit Price", "Expiration Date", "Status"};
+        tableModel = new DefaultTableModel(columnNames, 0);
+        inventoryTable.setModel(tableModel);
+        
         Warehouse warehouse = warehouseMap.get(warehouseName);
         if (warehouse != null) {
             try {
@@ -128,6 +132,40 @@ public class UserGUI {
             } catch (Exception ex) {
                 System.err.println("Error loading warehouse inventory: " + ex.getMessage());
                 ex.printStackTrace();
+            }
+        }
+    }
+    
+    private void loadAllWarehousesInventory() {
+        // Recreate table with warehouse column
+        String[] columnNames = {"Warehouse", "Item ID", "Item Name", "Quantity", "Unit Price", "Expiration Date", "Status"};
+        tableModel = new DefaultTableModel(columnNames, 0);
+        inventoryTable.setModel(tableModel);
+        
+        // Iterate through all warehouses
+        for (Map.Entry<String, Warehouse> warehouseEntry : warehouseMap.entrySet()) {
+            String warehouseName = warehouseEntry.getKey();
+            Warehouse warehouse = warehouseEntry.getValue();
+            
+            try {
+                Map<Integer, java.util.List<Item>> itemsByID = warehouse.getItemsByID();
+                
+                // Show each item instance separately
+                for (Map.Entry<Integer, java.util.List<Item>> entry : itemsByID.entrySet()) {
+                    for (Item item : entry.getValue()) {
+                        tableModel.addRow(new Object[]{
+                            warehouseName,
+                            String.valueOf(item.getSKU()),
+                            "Item " + item.getSKU(),
+                            item.getStock(),
+                            0.0,
+                            item.getAcquired() != null ? item.getAcquired().toString() : "N/A",
+                            "Active"
+                        });
+                    }
+                }
+            } catch (Exception ex) {
+                System.err.println("Error loading items from " + warehouseName + ": " + ex.getMessage());
             }
         }
     }
@@ -213,7 +251,7 @@ public class UserGUI {
         
         Warehouse warehouse = warehouseMap.get(selectedWarehouse);
         if (warehouse != null) {
-            AddItemDialog dialog = new AddItemDialog(frame, warehouse);
+            AddItemDialog dialog = new AddItemDialog(frame, warehouse, warehouseManager);
             dialog.setVisible(true);
             
             if (dialog.isConfirmed()) {
@@ -276,6 +314,11 @@ public class UserGUI {
     
     public void addSortListener(ActionListener listener) {
         sortButton.addActionListener(listener);
+    }
+    
+    // Method to refresh the inventory display with all warehouses
+    public void refreshInventory() {
+        loadAllWarehousesInventory();
     }
     
     // Getter methods

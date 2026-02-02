@@ -1,19 +1,25 @@
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
+import java.util.List;
 
 public class AddItemDialog extends JDialog {
     private JTextField itemIDField;
     private JTextField quantityField;
+    private JLabel itemNameLabel;
     private JButton addButton;
     private JButton cancelButton;
     
     private boolean confirmed = false;
     private Warehouse warehouse;
+    private WarehouseManager warehouseManager;
     
-    public AddItemDialog(JFrame parent, Warehouse warehouse) {
+    public AddItemDialog(JFrame parent, Warehouse warehouse, WarehouseManager warehouseManager) {
         super(parent, "Add Item to Warehouse", true);
         this.warehouse = warehouse;
-        setSize(400, 250);
+        this.warehouseManager = warehouseManager;
+        setSize(500, 300);
         setLocationRelativeTo(parent);
         setResizable(false);
         
@@ -37,11 +43,39 @@ public class AddItemDialog extends JDialog {
         gbc.gridx = 1;
         gbc.weightx = 0.7;
         itemIDField = new JTextField();
+        itemIDField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateItemName();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateItemName();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateItemName();
+            }
+        });
         mainPanel.add(itemIDField, gbc);
+        
+        // Item Name Label (display only)
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0.3;
+        mainPanel.add(new JLabel("Item Name:"), gbc);
+        
+        gbc.gridx = 1;
+        gbc.weightx = 0.7;
+        itemNameLabel = new JLabel("Unknown");
+        itemNameLabel.setForeground(new Color(100, 100, 100));
+        mainPanel.add(itemNameLabel, gbc);
         
         // Quantity Label and Field
         gbc.gridx = 0;
-        gbc.gridy = 1;
+        gbc.gridy = 2;
         gbc.weightx = 0.3;
         mainPanel.add(new JLabel("Quantity:"), gbc);
         
@@ -63,12 +97,41 @@ public class AddItemDialog extends JDialog {
         buttonPanel.add(cancelButton);
         
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.EAST;
         mainPanel.add(buttonPanel, gbc);
         
         add(mainPanel);
+    }
+    
+    private void updateItemName() {
+        try {
+            String idText = itemIDField.getText().trim();
+            if (idText.isEmpty()) {
+                itemNameLabel.setText("Unknown");
+                itemNameLabel.setForeground(new Color(100, 100, 100));
+                return;
+            }
+            
+            int itemID = Integer.parseInt(idText);
+            
+            // Search all warehouses for this item ID
+            if (warehouseManager != null) {
+                List<Item> items = warehouse.searchByID(itemID);
+                if (!items.isEmpty()) {
+                    itemNameLabel.setText("Item ID " + itemID + " (found in warehouse)");
+                    itemNameLabel.setForeground(new Color(0, 100, 0));
+                    return;
+                }
+            }
+            
+            itemNameLabel.setText("Unknown Item ID");
+            itemNameLabel.setForeground(new Color(200, 100, 100));
+        } catch (NumberFormatException ex) {
+            itemNameLabel.setText("Invalid ID");
+            itemNameLabel.setForeground(new Color(200, 100, 100));
+        }
     }
     
     private void onAddClicked() {
@@ -83,6 +146,13 @@ public class AddItemDialog extends JDialog {
             
             if (quantity <= 0) {
                 JOptionPane.showMessageDialog(this, "Quantity must be greater than 0.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // Validate that item ID exists in any warehouse
+            List<Item> items = warehouse.searchByID(itemID);
+            if (items.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Item ID " + itemID + " is not a known item.", "Invalid Item", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             
