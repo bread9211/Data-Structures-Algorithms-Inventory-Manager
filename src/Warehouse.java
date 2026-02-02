@@ -1,5 +1,5 @@
 import java.util.*;
-import java.time.LocalDate;
+import java.sql.Date;
 
 public class Warehouse {
 
@@ -9,7 +9,7 @@ public class Warehouse {
 
     private Map<Integer, Set<Integer>> itemsBySKU;
 
-    private Map<Integer, LocalDate> itemsByExpiration;
+    private Map<Integer, Date> itemsByExpiration;
 
     private List<Item> itemsByChrono;
 
@@ -34,16 +34,18 @@ public class Warehouse {
 
     public int addItem(Item item) {
         int instanceID = nextInstanceID++;
+        item.setInstance(instanceID);
 
         itemsByInstance.put(instanceID, item);
         itemsByChrono.add(item);
 
-        int sku = item.getItemID().getSKU();
+        int sku = item.getSKU();
         itemsBySKU.putIfAbsent(sku, new HashSet<>());
         itemsBySKU.get(sku).add(instanceID);
 
-        if (item.getExpiration() != null) {
-            itemsByExpiration.put(instanceID, item.getExpiration());
+        if (item.isPerishable()) {
+            PerishableItem perishable = (PerishableItem) item;
+            itemsByExpiration.put(instanceID, perishable.getExpr());
         }
 
         return instanceID;
@@ -53,7 +55,7 @@ public class Warehouse {
         Item item = itemsByInstance.remove(instanceID);
         if (item == null) return;
 
-        int sku = item.getItemID().getSKU();
+        int sku = item.getSKU();
         itemsBySKU.get(sku).remove(instanceID);
         if (itemsBySKU.get(sku).isEmpty()) {
             itemsBySKU.remove(sku);
@@ -75,11 +77,28 @@ public class Warehouse {
         }
         return result;
     }
+    
+    public List<Item> searchByID(int sku) {
+        return searchBySKU(sku);
+    }
+    
+    public Map<Integer, List<Item>> getItemsByID() {
+        Map<Integer, List<Item>> result = new HashMap<>();
+        for (Map.Entry<Integer, Set<Integer>> entry : itemsBySKU.entrySet()) {
+            List<Item> items = new ArrayList<>();
+            for (int instanceID : entry.getValue()) {
+                items.add(itemsByInstance.get(instanceID));
+            }
+            result.put(entry.getKey(), items);
+        }
+        return result;
+    }
 
     public List<Item> searchByName(String name) {
         List<Item> result = new ArrayList<>();
         for (Item item : itemsByInstance.values()) {
-            if (item.getItemID().getName().equalsIgnoreCase(name)) {
+            String itemName = "Item " + item.getSKU();
+            if (itemName.equalsIgnoreCase(name)) {
                 result.add(item);
             }
         }
@@ -89,7 +108,8 @@ public class Warehouse {
     public List<Item> searchByKeyword(String keyword) {
         List<Item> result = new ArrayList<>();
         for (Item item : itemsByInstance.values()) {
-            if (item.getItemID().hasKeyword(keyword)) {
+            String itemName = "Item " + item.getSKU();
+            if (itemName.equalsIgnoreCase(keyword)) {
                 result.add(item);
             }
         }
@@ -102,15 +122,18 @@ public class Warehouse {
 
     public List<Item> sortByName() {
         List<Item> list = new ArrayList<>(itemsByInstance.values());
-        list.sort((a, b) ->
-            a.getItemID().getName().compareToIgnoreCase(b.getItemID().getName()));
+        list.sort((a, b) -> {
+            String nameA = "Item " + a.getSKU();
+            String nameB = "Item " + b.getSKU();
+            return nameA.compareToIgnoreCase(nameB);
+        });
         return list;
     }
 
     public List<Item> sortBySKU() {
         List<Item> list = new ArrayList<>(itemsByInstance.values());
         list.sort((a, b) ->
-            Integer.compare(a.getItemID().getSKU(), b.getItemID().getSKU()));
+            Integer.compare(a.getSKU(), b.getSKU()));
         return list;
     }
 
