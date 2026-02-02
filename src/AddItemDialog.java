@@ -8,11 +8,11 @@ public class AddItemDialog extends JDialog {
     private JButton cancelButton;
     
     private boolean confirmed = false;
-    private int itemID;
-    private int quantity;
+    private Warehouse warehouse;
     
-    public AddItemDialog(JFrame parent) {
+    public AddItemDialog(JFrame parent, Warehouse warehouse) {
         super(parent, "Add Item to Warehouse", true);
+        this.warehouse = warehouse;
         setSize(400, 250);
         setLocationRelativeTo(parent);
         setResizable(false);
@@ -78,13 +78,17 @@ public class AddItemDialog extends JDialog {
                 return;
             }
             
-            itemID = Integer.parseInt(itemIDField.getText().trim());
-            quantity = Integer.parseInt(quantityField.getText().trim());
+            int itemID = Integer.parseInt(itemIDField.getText().trim());
+            int quantity = Integer.parseInt(quantityField.getText().trim());
             
             if (quantity <= 0) {
                 JOptionPane.showMessageDialog(this, "Quantity must be greater than 0.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
+            
+            // Add item to warehouse directly
+            Item newItem = new Item(itemID, quantity, null);
+            warehouse.addItem(newItem);
             
             confirmed = true;
             dispose();
@@ -100,13 +104,5 @@ public class AddItemDialog extends JDialog {
     
     public boolean isConfirmed() {
         return confirmed;
-    }
-    
-    public int getItemID() {
-        return itemID;
-    }
-    
-    public int getQuantity() {
-        return quantity;
     }
 }

@@ -211,21 +211,14 @@ public class UserGUI {
             return;
         }
         
-        AddItemDialog dialog = new AddItemDialog(frame);
-        dialog.setVisible(true);
-        
-        if (dialog.isConfirmed()) {
-            Warehouse warehouse = warehouseMap.get(selectedWarehouse);
-            if (warehouse != null) {
-                try {
-                    Item newItem = new Item(dialog.getItemID(), dialog.getQuantity(), null);
-                    warehouse.addItem(newItem);
-                    loadWarehouseInventory(selectedWarehouse);
-                    JOptionPane.showMessageDialog(frame, "Item added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(frame, "Error adding item: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                    ex.printStackTrace();
-                }
+        Warehouse warehouse = warehouseMap.get(selectedWarehouse);
+        if (warehouse != null) {
+            AddItemDialog dialog = new AddItemDialog(frame, warehouse);
+            dialog.setVisible(true);
+            
+            if (dialog.isConfirmed()) {
+                loadWarehouseInventory(selectedWarehouse);
+                JOptionPane.showMessageDialog(frame, "Item added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
             }
         }
     }
