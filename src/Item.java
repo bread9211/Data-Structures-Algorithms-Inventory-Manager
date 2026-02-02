@@ -41,4 +41,7 @@ public class Item {
     public void setSKU(int ID){
         SKU = ID;
     }
+    public boolean isPerishable(){
+        return false;
+    }
 }

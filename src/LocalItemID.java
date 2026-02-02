@@ -14,6 +14,14 @@ public class LocalItemID{
         volatility = 1;
     }
 
+    public LocalItemID(ItemID itemID, int stock){
+        reference = itemID;
+        this.stock = stock;
+        this.demand = stock/itemID.getDelTime();
+        dailyPurchased = 0;
+        volatility = 1;
+    }
+
     public void addStock(int change){
         stock += change;
     }

@@ -4,8 +4,8 @@ import java.time.LocalDate;
 public class Warehouse {
     private String name;
     //warehousemanager the sku
-    private Map<Integer, Integer> itemsByID;
-    private Map<LocalItemID, Integer> stockedIDs;
+    private Map<Integer, Integer> itemsByID; //instanceID, SKU
+    private Map<Integer,LocalItemID> stockedIDs;
     private Map<Integer, Date> itemsByExpr;
     private List<Transaction> transactions;
     private List<Item> itemsByChrono;
@@ -16,6 +16,9 @@ public class Warehouse {
         this.name = name;
         itemsByID = new HashMap<>();
         stockedIDs = new HashSet<>();
+        transactions = new ArrayList<>();
+        itemsByChrono = new ArrayList<>();
+        lastInstance = 0;
     }
 
     public String getName() {
@@ -26,19 +29,28 @@ public class Warehouse {
 
     public void addItem(Item item, ItemID itemID) {
         int SKU = item.getSKU();
-        if (!itemsByID.containsKey(SKU)) {
-            stockedIDs.add();
-
+        addItem(item,SKU);
+        if (!itemsByID.containsValue(SKU)) {
+            stockedIDs.add(SKU,new LocalItemID(itemID, item.getStock()));
         }
-        itemsByID.put(SKU,item);
+    }
+    public void addItem(Item item, int SKU){
         itemsByChrono.add(item);
+        itemsByID.put(lastInstance,SKU);
+        lastInstance++;
         if(item.isPerishable())
             itemsByExpr.put(item,item.getExpr());
     }
 
-    public void removeItem(String id, int amount) {
-        if (!itemsByID.containsKey(id)) return;
-
+    public void purchase(int SKU, int amount) {
+        if(!itemsByID.containsKey(SKU)) return;
+        
+        List<Integer> items = new ArrayList<>();
+        items = itemsByID.containsValue(SKU);
+        if(stockedIDs.get(SKU).getExpr() != 0)
+            while(amount > 0 && itemsByID.containsValue(SKU))
+                if(!itemsByExpr.get(i).before(LocalDate))
+                    amount = itemsByChrono.get(i).removeItem(amount);
         Item item = itemsByID.get(id);
         item.removeStock(amount);
 
@@ -46,6 +58,10 @@ public class Warehouse {
             itemsByID.remove(id);
             stockedIDs.remove(id);
         }
+    }
+
+    public void splitInstance(Item item, int amount){
+        
     }
 
 //search by id, name or keywords

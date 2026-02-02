@@ -18,17 +18,6 @@ public class PerishableItem extends Item{
     public boolean checkExpr(Date current){
         return exprDate.before(current);
     }
-
-    public int purchase(int quantity, Date current){
-        if(checkExpr(current)){
-            return quantity;
-        }else if(amount - quantity > 0){
-            amount -= quantity;
-            return -1;
-        }else
-            amount = 0;
-            return quantity - amount;
-    }
     public boolean isPerishable(){
         return true;
     }
