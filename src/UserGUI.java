@@ -3,6 +3,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import com.formdev.flatlaf.*;
+import java.sql.Date;
 import java.util.*;
 public class UserGUI {
     private JFrame frame;
@@ -101,25 +102,32 @@ public class UserGUI {
         clearTable();
         Warehouse warehouse = warehouseMap.get(warehouseName);
         if (warehouse != null) {
-            // Try to get items from the warehouse
             try {
-                java.lang.reflect.Field field = Warehouse.class.getDeclaredField("itemsByID");
-                field.setAccessible(true);
-                Map<Integer, Item> itemsByID = (Map<Integer, Item>) field.get(warehouse);
+                Map<Integer, java.util.List<Item>> itemsByID = warehouse.getItemsByID();
                 
-                for (Item item : itemsByID.values()) {
+                for (Map.Entry<Integer, java.util.List<Item>> entry : itemsByID.entrySet()) {
+                    int totalStock = 0;
+                    Date lastAcquired = null;
+                    
+                    for (Item item : entry.getValue()) {
+                        totalStock += item.getStock();
+                        if (lastAcquired == null || item.getAcquired().after(lastAcquired)) {
+                            lastAcquired = item.getAcquired();
+                        }
+                    }
+                    
                     addInventoryRow(
-                        String.valueOf(item.getID()),
-                        "Item " + item.getID(),
-                        item.getStock(),
+                        String.valueOf(entry.getKey()),
+                        "Item " + entry.getKey(),
+                        totalStock,
                         0.0,
-                        item.getPurchased() != null ? item.getPurchased().toString() : "N/A",
+                        lastAcquired != null ? lastAcquired.toString() : "N/A",
                         "Active"
                     );
                 }
             } catch (Exception ex) {
-                // If reflection fails, items might not be loaded yet
-                System.err.println("Note: Could not load warehouse items via reflection.");
+                System.err.println("Error loading warehouse inventory: " + ex.getMessage());
+                ex.printStackTrace();
             }
         }
     }
