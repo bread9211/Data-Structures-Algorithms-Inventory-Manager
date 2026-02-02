@@ -2,59 +2,83 @@ import java.util.*;
 import java.time.LocalDate;
 
 public class Warehouse {
+
     private String name;
-    //warehousemanager the sku
-    private Map<Integer, Integer> itemsByID;
-    private ArrayList<ItemID> stockedIDs;
-    private Map<Integer, Date> itemsByExpr;
-    private List<Transaction> transactions;
+
+    private Map<Integer, Item> itemsByInstance;
+
+    private Map<Integer, Set<Integer>> itemsBySKU;
+
+    private Map<Integer, LocalDate> itemsByExpiration;
+
     private List<Item> itemsByChrono;
-    //local stock thing
+
+    private int nextInstanceID;
 
     public Warehouse(String name) {
         this.name = name;
-        itemsByID = new HashMap<>();
-        stockedIDs = new HashSet<>();
+        itemsByInstance = new HashMap<>();
+        itemsBySKU = new HashMap<>();
+        itemsByExpiration = new HashMap<>();
+        itemsByChrono = new ArrayList<>();
+        nextInstanceID = 1;
     }
 
     public String getName() {
         return name;
     }
 
-//add and delete
+    /* =========================
+       ADD / REMOVE
+       ========================= */
 
-    public void addItem(Item item) {
-        int SKU = item.getID();
-        if (!itemsByID.containsKey(SKU)) {
-            stockedIDs.add(id);
-        }
-        itemsByID.put(SKU,item);
+    public int addItem(Item item) {
+        int instanceID = nextInstanceID++;
+
+        itemsByInstance.put(instanceID, item);
         itemsByChrono.add(item);
-        if(item.isPerishable())
-            itemsByExpr.put(item,item.getExpr());
-    }
 
-    public void removeItem(String id, int amount) {
-        if (!itemsByID.containsKey(id)) return;
+        int sku = item.getItemID().getSKU();
+        itemsBySKU.putIfAbsent(sku, new HashSet<>());
+        itemsBySKU.get(sku).add(instanceID);
 
-        Item item = itemsByID.get(id);
-        item.removeStock(amount);
-
-        if (item.getStock() <= 0) {
-            itemsByID.remove(id);
-            stockedIDs.remove(id);
+        if (item.getExpiration() != null) {
+            itemsByExpiration.put(instanceID, item.getExpiration());
         }
+
+        return instanceID;
     }
 
-//search by id, name or keywords
+    public void removeItemInstance(int instanceID) {
+        Item item = itemsByInstance.remove(instanceID);
+        if (item == null) return;
 
-    public List<Item> searchByID(int ID){
-        return itemsByID.get(ID);
+        int sku = item.getItemID().getSKU();
+        itemsBySKU.get(sku).remove(instanceID);
+        if (itemsBySKU.get(sku).isEmpty()) {
+            itemsBySKU.remove(sku);
+        }
+
+        itemsByExpiration.remove(instanceID);
+    }
+
+    /* =========================
+       SEARCH
+       ========================= */
+
+    public List<Item> searchBySKU(int sku) {
+        List<Item> result = new ArrayList<>();
+        if (!itemsBySKU.containsKey(sku)) return result;
+
+        for (int id : itemsBySKU.get(sku)) {
+            result.add(itemsByInstance.get(id));
+        }
+        return result;
     }
 
     public List<Item> searchByName(String name) {
         List<Item> result = new ArrayList<>();
-        for (Item item : itemsByID.values()) {
+        for (Item item : itemsByInstance.values()) {
             if (item.getItemID().getName().equalsIgnoreCase(name)) {
                 result.add(item);
             }
@@ -64,7 +88,7 @@ public class Warehouse {
 
     public List<Item> searchByKeyword(String keyword) {
         List<Item> result = new ArrayList<>();
-        for (Item item : itemsByID.values()) {
+        for (Item item : itemsByInstance.values()) {
             if (item.getItemID().hasKeyword(keyword)) {
                 result.add(item);
             }
@@ -72,58 +96,66 @@ public class Warehouse {
         return result;
     }
 
-//sort by name, id or expiration date
+    /* =========================
+       SORTING
+       ========================= */
 
     public List<Item> sortByName() {
-        List<Item> list = new ArrayList<>(itemsByID.values());
+        List<Item> list = new ArrayList<>(itemsByInstance.values());
         list.sort((a, b) ->
             a.getItemID().getName().compareToIgnoreCase(b.getItemID().getName()));
         return list;
     }
 
-    public List<Item> sortByID() {
-        List<Item> list = new ArrayList<>(itemsByID.values());
+    public List<Item> sortBySKU() {
+        List<Item> list = new ArrayList<>(itemsByInstance.values());
         list.sort((a, b) ->
-            a.getItemID().getID().compareTo(b.getItemID().getID()));
+            Integer.compare(a.getItemID().getSKU(), b.getItemID().getSKU()));
         return list;
     }
 
     public List<Item> sortByExpiration() {
-        List<Item> list = new ArrayList<>(itemsByID.values());
-        list.sort((a, b) -> {
-            if (a.getExpiration() == null) return 1;
-            if (b.getExpiration() == null) return -1;
-            return a.getExpiration().compareTo(b.getExpiration());
-        });
-        return list;
-    }
+        List<Integer> ids = new ArrayList<>(itemsByExpiration.keySet());
 
-//move to diff warehouse
+        ids.sort((a, b) ->
+            itemsByExpiration.get(a).compareTo(itemsByExpiration.get(b)));
 
-    public void transferTo(Warehouse other, String id, int amount) {
-        if (!itemsByID.containsKey(id)) return;
-
-        Item item = itemsByID.get(id);
-        if (item.getStock() < amount) return;
-
-        item.removeStock(amount);
-        other.addItem(new Item(item.getItemID(), amount, item.getExpiration()));
-
-        if (item.getStock() == 0) {
-            itemsByID.remove(id);
-            stockedIDs.remove(id);
+        List<Item> result = new ArrayList<>();
+        for (int id : ids) {
+            result.add(itemsByInstance.get(id));
         }
+        return result;
     }
 
-//display inventory but prob put this in the gui idk how do that
+    /* =========================
+       TRANSFER
+       ========================= */
+
+    public void transferTo(Warehouse other, int instanceID) {
+        Item item = itemsByInstance.get(instanceID);
+        if (item == null) return;
+
+        other.addItem(item);
+        removeItemInstance(instanceID);
+    }
+
+    /* =========================
+       DISPLAY
+       ========================= */
 
     public void printInventory() {
         System.out.println("Warehouse: " + name);
-        for (Item item : itemsByID.values()) {
+        for (Item item : itemsByInstance.values()) {
             System.out.println("  " + item);
         }
     }
 
+    public void printChronological() {
+        System.out.println("Chronological Log:");
+        for (Item item : itemsByChrono) {
+            System.out.println("  " + item);
+        }
+    }
 }
 
 /*

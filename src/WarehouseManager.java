@@ -1,20 +1,31 @@
 import java.util.*;
 
 public class WarehouseManager {
-    private List<Warehouse> warehouse;
+    private Set<Integer> stockedSKUs;
+    private List<Transaction> transactionLog;
+    private List<Warehouse> warehouses;
 
     public WarehouseManager() {
-        warehouse = new ArrayList<>();
+        stockedSKUs = new HashSet<>();
+        transactionLog = new ArrayList<>();
+        warehouses = new ArrayList<>();
+    }
+
+    public void registerSKU(int sku) {
+        stockedSKUs.add(sku);
     }
 
     public void addWarehouse(Warehouse w) {
-        warehouse.add(w);
+        warehouses.add(w);
     }
 
-    public void printAllWarehouses() {
-        for (Warehouse w : warehouse) {
-            w.printInventory();
-            System.out.println();
+    public void logTransaction(Transaction t) {
+        transactionLog.add(t);
+    }
+
+    public void printTransactions() {
+        for (Transaction t : transactionLog) {
+            System.out.println(t);
         }
     }
 }
