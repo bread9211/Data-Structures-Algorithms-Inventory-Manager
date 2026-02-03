@@ -1,5 +1,7 @@
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.event.DocumentListener;
+import javax.swing.event.DocumentEvent;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import com.formdev.flatlaf.*;
@@ -26,12 +28,12 @@ public class UserGUI {
     private JButton addItemButton;
     private JButton sellItemButton;
     private JButton transferItemButton;
-    private JButton searchButton;
     private JButton sortButton;
     private JButton themeSwitchButton;
     
     // Search/filter components
     private JTextField searchField;
+    private javax.swing.Timer searchTimer;  // Timer for debouncing search
 
     // State variables
     private boolean isDarkMode = false;
@@ -314,8 +316,36 @@ public class UserGUI {
         searchPanel.add(new JLabel("Search:"));
         searchField = new JTextField(20);
         searchPanel.add(searchField);
-        searchButton = new JButton("Search");
-        searchPanel.add(searchButton);
+        
+        // Add document listener for real-time search as user types
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                triggerSearch();
+            }
+            
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                triggerSearch();
+            }
+            
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                triggerSearch();
+            }
+            
+            private void triggerSearch() {
+                // Cancel existing timer if any
+                if (searchTimer != null) {
+                    searchTimer.stop();
+                }
+                
+                // Create new timer with 300ms delay to debounce rapid typing
+                searchTimer = new javax.swing.Timer(300, event -> performSearch());
+                searchTimer.setRepeats(false);
+                searchTimer.start();
+            }
+        });
         
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
@@ -377,6 +407,84 @@ public class UserGUI {
         }
     }
     
+    private void performSearch() {
+        String searchQuery = searchField.getText().trim();
+        
+        if (searchQuery.isEmpty()) {
+            // If search is empty, show all warehouses inventory instead
+            String selectedWarehouse = (String) warehouseSelector.getSelectedItem();
+            if (selectedWarehouse != null && !selectedWarehouse.equals("Select a Warehouse...")) {
+                loadWarehouseInventory(selectedWarehouse);
+            } else {
+                loadAllWarehousesInventory();
+            }
+            return;
+        }
+        
+        // Recreate table with warehouse column for unified search results
+        String[] columnNames = {"Warehouse", "Item ID", "Item Name", "Quantity", "Unit Price", "Expiration Date", "Status"};
+        tableModel = new DefaultTableModel(columnNames, 0);
+        inventoryTable.setModel(tableModel);
+        
+        // Try to parse as item ID (numeric search)
+        Integer itemID = null;
+        try {
+            itemID = Integer.parseInt(searchQuery);
+        } catch (NumberFormatException e) {
+            // Not a number, will search as text first
+        }
+        
+        // Prepare lowercase search query for case-insensitive partial matching
+        String lowerSearchQuery = searchQuery.toLowerCase();
+        
+        // Search through all warehouses
+        for (Map.Entry<String, Warehouse> warehouseEntry : warehouseMap.entrySet()) {
+            String warehouseName = warehouseEntry.getKey();
+            Warehouse warehouse = warehouseEntry.getValue();
+            
+            try {
+                java.util.List<Item> results = new java.util.ArrayList<>();
+                java.util.Map<Integer, java.util.List<Item>> itemsByID = warehouse.getItemsByID();
+                
+                // Search for partial matches on item name (case-insensitive)
+                for (Map.Entry<Integer, java.util.List<Item>> entry : itemsByID.entrySet()) {
+                    String itemName = "Item " + entry.getKey();  // Match the naming convention used in display
+                    if (itemName.toLowerCase().contains(lowerSearchQuery)) {
+                        results.addAll(entry.getValue());
+                    }
+                }
+                
+                // If no name results found and query is numeric, try searching by ID
+                if (results.isEmpty() && itemID != null) {
+                    results.addAll(warehouse.searchByID(itemID));
+                }
+                
+                // Add results to table
+                for (Item item : results) {
+                    String exprDateStr = "N/A";
+                    if (item.isPerishable()) {
+                        PerishableItem perishable = (PerishableItem) item;
+                        if (perishable.getExpr() != null) {
+                            exprDateStr = perishable.getExpr().toString();
+                        }
+                    }
+                    
+                    tableModel.addRow(new Object[]{
+                        warehouseName,
+                        String.valueOf(item.getSKU()),
+                        "Item " + item.getSKU(),
+                        item.getStock(),
+                        0.0,
+                        exprDateStr,
+                        "Active"
+                    });
+                }
+            } catch (Exception ex) {
+                System.err.println("Error searching in " + warehouseName + ": " + ex.getMessage());
+            }
+        }
+    }
+    
     private void setupLayout() {
         frame.setVisible(true);
     }
@@ -422,10 +530,6 @@ public class UserGUI {
     
     public void addTransferItemListener(ActionListener listener) {
         transferItemButton.addActionListener(listener);
-    }
-    
-    public void addSearchListener(ActionListener listener) {
-        searchButton.addActionListener(listener);
     }
     
     public void addSortListener(ActionListener listener) {
