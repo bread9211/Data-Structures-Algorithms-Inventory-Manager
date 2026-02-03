@@ -158,7 +158,7 @@ public class AddItemDialog extends JDialog {
             
             // Add item to warehouse directly
             Item newItem = new Item(itemID, quantity, null);
-            warehouse.addItem(newItem);
+            warehouse.addItem(newItem, itemID);
             
             confirmed = true;
             dispose();
