@@ -25,7 +25,7 @@ public class Item {
     }
     public int getStock(){
         return amount;
-    }
+    }   
     public int getSKU(){
         return SKU;
     }
@@ -43,5 +43,11 @@ public class Item {
     }
     public boolean isPerishable(){
         return false;
+    }
+    public Date getExpr(){
+        return null;
+    }
+    public String toString(){
+        return  "Instance ID: " + instanceID + "   SKU: " + SKU + "   Stock: " + amount + "   Acquired: " + acquiredDate;
     }
 }

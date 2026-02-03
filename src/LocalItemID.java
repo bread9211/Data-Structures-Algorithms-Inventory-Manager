@@ -13,7 +13,6 @@ public class LocalItemID{
         dailyPurchased = 0;
         volatility = 1;
     }
-
     public LocalItemID(ItemID itemID, int stock){
         reference = itemID;
         this.stock = stock;
@@ -24,6 +23,9 @@ public class LocalItemID{
 
     public void addStock(int change){
         stock += change;
+    }
+    public ItemID getReference(){
+        return reference;
     }
 
     //Changes the daily demand based on how many were purchased in a day

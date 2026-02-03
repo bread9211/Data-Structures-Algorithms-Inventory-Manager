@@ -11,7 +11,6 @@ public class Warehouse {
     private List<Item> itemsByChrono;
     private int lastInstance;
     
-
     public Warehouse(String name) {
         this.name = name;
         itemsByID = new HashMap<>();
