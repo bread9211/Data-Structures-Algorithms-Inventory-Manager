@@ -24,11 +24,23 @@ public class GUITester {
         warehouseA.addItem(new Item(1002, 200, null));
         warehouseA.addItem(new Item(1003, 75, null));
         
+        // Add perishable items with expiration dates
+        warehouseA.addItem(new PerishableItem(1004, 100, null, java.sql.Date.valueOf("2026-12-31")));
+        warehouseA.addItem(new PerishableItem(1005, 50, null, java.sql.Date.valueOf("2026-03-15")));
+        
         warehouseB.addItem(new Item(2001, 50, null));
         warehouseB.addItem(new Item(2002, 30, null));
         
+        // Add perishable items to Warehouse B
+        warehouseB.addItem(new PerishableItem(2003, 80, null, java.sql.Date.valueOf("2026-02-14")));
+        warehouseB.addItem(new PerishableItem(2004, 120, null, java.sql.Date.valueOf("2026-06-30")));
+        
         warehouseC.addItem(new Item(3001, 100, null));
         warehouseC.addItem(new Item(3002, 60, null));
+        
+        // Add perishable items to Warehouse C
+        warehouseC.addItem(new PerishableItem(3003, 45, null, java.sql.Date.valueOf("2026-04-10")));
+        warehouseC.addItem(new PerishableItem(3004, 200, null, java.sql.Date.valueOf("2026-09-20")));
         
         // Refresh the inventory display to show all items
         gui.refreshInventory();
