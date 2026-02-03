@@ -1,5 +1,5 @@
 import java.util.*;
-import java.time.LocalDate;
+import java.sql.Date;
 
 public class Warehouse {
 
@@ -80,6 +80,22 @@ public class Warehouse {
 
         for (int id : itemsBySKU.get(sku)) {
             result.add(itemsByChrono.get(id));
+        }
+        return result;
+    }
+    
+    public List<Item> searchByID(int sku) {
+        return searchBySKU(sku);
+    }
+    
+    public Map<Integer, List<Item>> getItemsByID() {
+        Map<Integer, List<Item>> result = new HashMap<>();
+        for (Map.Entry<Integer, Set<Integer>> entry : itemsBySKU.entrySet()) {
+            List<Item> items = new ArrayList<>();
+            for (int instanceID : entry.getValue()) {
+                items.add(itemsByChrono.get(instanceID));
+            }
+            result.put(entry.getKey(), items);
         }
         return result;
     }
