@@ -1,31 +1,65 @@
 import java.util.*;
 
 public class WarehouseManager {
-    private Set<Integer> stockedSKUs;
-    private List<Transaction> transactionLog;
-    private List<Warehouse> warehouses;
+    private Map<String,Warehouse> warehouses;
+    private List<ItemID> stockedIDs;
+    private Warehouse current;
+    private int nextSKU;
 
     public WarehouseManager() {
-        stockedSKUs = new HashSet<>();
-        transactionLog = new ArrayList<>();
-        warehouses = new ArrayList<>();
+        warehouses = new HashMap<>();
+        stockedIDs = new ArrayList<>();
+        current = null;
+        nextSKU = 0;
     }
 
-    public void registerSKU(int sku) {
-        stockedSKUs.add(sku);
+    public Warehouse getCurrent(){
+        return current;
+    }
+    public void setCurrent(String name){
+        current = warehouses.get(name);
+    }
+    public Warehouse getWarehouse(String name){
+        return warehouses.get(name);
     }
 
-    public void addWarehouse(Warehouse w) {
-        warehouses.add(w);
+    public void addWarehouse(String name) {
+        Warehouse w = new Warehouse(name);
+        warehouses.put(name,w);
+        current = w;
+    }
+    public void addOwned(Item item){
+        current.addItem(item,stockedIDs.get(item.getSKU()));
+    }
+    public void addNew(Item item, ItemID itemID){
+        itemID.setSKU(nextSKU);
+        item.setSKU(nextSKU);
+        nextSKU++;
+        stockedIDs.add(itemID);
+        current.addItem(item,itemID);
     }
 
-    public void logTransaction(Transaction t) {
-        transactionLog.add(t);
+    public void tradeItems(Warehouse other, Set<Integer> currentInstances, Set<Integer> otherInstances){
+        Set<Item> curItems = new HashSet<>();
+        for(int id : currentInstances)
+            curItems.add(current.removeItemInstance(id));
+        Set<Item> othItems = new HashSet<>();
+        for(int id : otherInstances)
+            othItems.add(other.removeItemInstance(id));
+
+        Transaction trade = new Trade(current,other,curItems,othItems);
+        current.addTransaction(trade);
+        other.addTransaction(trade);
     }
 
-    public void printTransactions() {
-        for (Transaction t : transactionLog) {
-            System.out.println(t);
+    public ItemID getItemID(int SKU){
+        return stockedIDs.get(SKU);
+    }
+
+    public void printAllWarehouses() {
+        for (Warehouse w : warehouses.values()) {
+            w.printInventory();
+            System.out.println();
         }
     }
 }

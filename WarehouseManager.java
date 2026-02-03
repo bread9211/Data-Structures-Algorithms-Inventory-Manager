@@ -1,7 +1,9 @@
 import java.util.*;
+import java.util.Date;
+import java.util.LocalDate;
 
 public class WarehouseManager {
-    private List<Warehouse> warehouses;
+    private Map<String,Warehouse> warehouses;
     private List<ItemID> stockedIDs;
     private Warehouse current;
     private int nextSKU;
@@ -11,6 +13,16 @@ public class WarehouseManager {
         stockedIDs = new ArrayList<>();
         current = null;
         nextSKU = 0;
+    }
+
+    public Warehouse getCurrent(){
+        return current;
+    }
+    public void setCurrent(String name){
+        current = warehouses.get(name);
+    }
+    public Warehouse getWarehouse(String name){
+        return warehouses.get(name);
     }
 
     public void addWarehouse(String name) {
@@ -28,9 +40,24 @@ public class WarehouseManager {
         stockedIDs.add(itemID);
         current.add(item,itemID);
     }
-    public itemID(int SKU){
+
+    public void tradeItems(Warehouse other, Set<Integer> currentInstances, Set<Integer> otherInstances){
+        Set<Item> curItems = new HastSet<>();
+        for(int id : currentInstances)
+            curItems.add(current.removeItemInstance(id));
+        Set<Item> othItems = new HastSet<>();
+        for(int id : otherInstances)
+            othItems.add(other.removeItemInstance(id));
+
+        Transaction trade = new Trade(current,other,curItems,othItems);
+        current.addTransaction(trade);
+        other.addTransaction(trade);
+    }
+
+    public itemID getItemID(int SKU){
         return stockedIDs.get(SKU);
     }
+
     public void printAllWarehouses() {
         for (Warehouse w : warehouse) {
             w.printInventory();
