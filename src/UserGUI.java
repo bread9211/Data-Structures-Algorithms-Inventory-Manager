@@ -1,5 +1,7 @@
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.event.DocumentListener;
+import javax.swing.event.DocumentEvent;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import com.formdev.flatlaf.*;
@@ -26,15 +28,16 @@ public class UserGUI {
     private JButton addItemButton;
     private JButton sellItemButton;
     private JButton transferItemButton;
-    private JButton searchButton;
     private JButton sortButton;
     private JButton themeSwitchButton;
     
     // Search/filter components
     private JTextField searchField;
+    private javax.swing.Timer searchTimer;  // Timer for debouncing search
 
     // State variables
     private boolean isDarkMode = false;
+    private String currentSortMode = "Warehouse";
     
     public UserGUI(WarehouseManager warehouseManager) {
         this.warehouseManager = warehouseManager;
@@ -109,24 +112,74 @@ public class UserGUI {
             try {
                 Map<Integer, java.util.List<Item>> itemsByID = warehouse.getItemsByID();
                 
+                // Collect items for sorting
+                java.util.List<Object[]> itemsToDisplay = new ArrayList<>();
+                
                 for (Map.Entry<Integer, java.util.List<Item>> entry : itemsByID.entrySet()) {
                     int totalStock = 0;
                     Date lastAcquired = null;
+                    Date earliestExpiration = null;
+                    boolean hasPerishable = false;
                     
                     for (Item item : entry.getValue()) {
                         totalStock += item.getStock();
                         if (lastAcquired == null || item.getAcquired().after(lastAcquired)) {
                             lastAcquired = item.getAcquired();
                         }
+                        
+                        if (item.isPerishable()) {
+                            PerishableItem perishable = (PerishableItem) item;
+                            Date exprDate = perishable.getExpr();
+                            if (exprDate != null) {
+                                if (earliestExpiration == null || exprDate.before(earliestExpiration)) {
+                                    earliestExpiration = exprDate;
+                                }
+                                hasPerishable = true;
+                            }
+                        }
                     }
                     
-                    addInventoryRow(
+                    String exprDateStr = (earliestExpiration != null) ? earliestExpiration.toString() : "N/A";
+                    
+                    itemsToDisplay.add(new Object[]{
                         String.valueOf(entry.getKey()),
                         "Item " + entry.getKey(),
                         totalStock,
                         0.0,
-                        lastAcquired != null ? lastAcquired.toString() : "N/A",
-                        "Active"
+                        exprDateStr,
+                        "Active",
+                        entry.getKey(),  // For sorting by ID
+                        earliestExpiration  // For sorting by expiration date
+                    });
+                }
+                
+                // Sort based on current sort mode
+                if (currentSortMode.equals("ID")) {
+                    itemsToDisplay.sort((a, b) -> Integer.compare((Integer) a[6], (Integer) b[6]));
+                } else if (currentSortMode.equals("Name")) {
+                    itemsToDisplay.sort((a, b) -> ((String) a[1]).compareToIgnoreCase((String) b[1]));
+                } else if (currentSortMode.equals("Expiration Date")) {
+                    itemsToDisplay.sort((a, b) -> {
+                        Date dateA = (Date) a[7];
+                        Date dateB = (Date) b[7];
+                        // Items with no expiration date go to the end
+                        if (dateA == null && dateB == null) return 0;
+                        if (dateA == null) return 1;
+                        if (dateB == null) return -1;
+                        return dateA.compareTo(dateB);
+                    });
+                }
+                // "Warehouse" sort mode doesn't apply for single warehouse, so keep original order
+                
+                // Add sorted items to table (without the extra SKU column)
+                for (Object[] itemData : itemsToDisplay) {
+                    addInventoryRow(
+                        (String) itemData[0],
+                        (String) itemData[1],
+                        (Integer) itemData[2],
+                        (Double) itemData[3],
+                        (String) itemData[4],
+                        (String) itemData[5]
                     );
                 }
             } catch (Exception ex) {
@@ -142,6 +195,9 @@ public class UserGUI {
         tableModel = new DefaultTableModel(columnNames, 0);
         inventoryTable.setModel(tableModel);
         
+        // Collect all items with warehouse info
+        java.util.List<Object[]> allItems = new ArrayList<>();
+        
         // Iterate through all warehouses
         for (Map.Entry<String, Warehouse> warehouseEntry : warehouseMap.entrySet()) {
             String warehouseName = warehouseEntry.getKey();
@@ -153,20 +209,63 @@ public class UserGUI {
                 // Show each item instance separately
                 for (Map.Entry<Integer, java.util.List<Item>> entry : itemsByID.entrySet()) {
                     for (Item item : entry.getValue()) {
-                        tableModel.addRow(new Object[]{
+                        Date exprDate = null;
+                        String exprDateStr = "N/A";
+                        if (item.isPerishable()) {
+                            PerishableItem perishable = (PerishableItem) item;
+                            exprDate = perishable.getExpr();
+                            if (exprDate != null) {
+                                exprDateStr = exprDate.toString();
+                            }
+                        }
+                        
+                        allItems.add(new Object[]{
                             warehouseName,
                             String.valueOf(item.getSKU()),
                             "Item " + item.getSKU(),
                             item.getStock(),
                             0.0,
-                            item.getAcquired() != null ? item.getAcquired().toString() : "N/A",
-                            "Active"
+                            exprDateStr,
+                            "Active",
+                            item.getSKU(),  // For sorting by ID
+                            exprDate  // For sorting by expiration date
                         });
                     }
                 }
             } catch (Exception ex) {
                 System.err.println("Error loading items from " + warehouseName + ": " + ex.getMessage());
             }
+        }
+        
+        // Sort based on current sort mode
+        if (currentSortMode.equals("ID")) {
+            allItems.sort((a, b) -> Integer.compare((Integer) a[7], (Integer) b[7]));
+        } else if (currentSortMode.equals("Name")) {
+            allItems.sort((a, b) -> ((String) a[2]).compareToIgnoreCase((String) b[2]));
+        } else if (currentSortMode.equals("Expiration Date")) {
+            allItems.sort((a, b) -> {
+                Date dateA = (Date) a[8];
+                Date dateB = (Date) b[8];
+                // Items with no expiration date go to the end
+                if (dateA == null && dateB == null) return 0;
+                if (dateA == null) return 1;
+                if (dateB == null) return -1;
+                return dateA.compareTo(dateB);
+            });
+        }
+        // "Warehouse" is default, which is the original order
+        
+        // Add sorted items to table (without the extra SKU column)
+        for (Object[] itemData : allItems) {
+            tableModel.addRow(new Object[]{
+                itemData[0], // Warehouse
+                itemData[1], // Item ID
+                itemData[2], // Item Name
+                itemData[3], // Quantity
+                itemData[4], // Unit Price
+                itemData[5], // Expiration Date
+                itemData[6]  // Status
+            });
         }
     }
 
@@ -217,8 +316,36 @@ public class UserGUI {
         searchPanel.add(new JLabel("Search:"));
         searchField = new JTextField(20);
         searchPanel.add(searchField);
-        searchButton = new JButton("Search");
-        searchPanel.add(searchButton);
+        
+        // Add document listener for real-time search as user types
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                triggerSearch();
+            }
+            
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                triggerSearch();
+            }
+            
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                triggerSearch();
+            }
+            
+            private void triggerSearch() {
+                // Cancel existing timer if any
+                if (searchTimer != null) {
+                    searchTimer.stop();
+                }
+                
+                // Create new timer with 300ms delay to debounce rapid typing
+                searchTimer = new javax.swing.Timer(300, event -> performSearch());
+                searchTimer.setRepeats(false);
+                searchTimer.start();
+            }
+        });
         
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
@@ -235,6 +362,9 @@ public class UserGUI {
         
         // Hook up Add Item button
         addItemButton.addActionListener(e -> openAddItemDialog());
+        
+        // Hook up Sort By button
+        sortButton.addActionListener(e -> openSortDialog());
         
         actionPanel.add(searchPanel, BorderLayout.NORTH);
         actionPanel.add(buttonPanel, BorderLayout.CENTER);
@@ -257,6 +387,100 @@ public class UserGUI {
             if (dialog.isConfirmed()) {
                 loadWarehouseInventory(selectedWarehouse);
                 JOptionPane.showMessageDialog(frame, "Item added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            }
+        }
+    }
+    
+    private void openSortDialog() {
+        SortDialog dialog = new SortDialog(frame, currentSortMode);
+        dialog.setVisible(true);
+        
+        if (dialog.isConfirmed()) {
+            currentSortMode = dialog.getSelectedSortMode();
+            // Reload current view with new sort mode
+            String selectedWarehouse = (String) warehouseSelector.getSelectedItem();
+            if (selectedWarehouse != null && !selectedWarehouse.equals("Select a Warehouse...")) {
+                loadWarehouseInventory(selectedWarehouse);
+            } else {
+                loadAllWarehousesInventory();
+            }
+        }
+    }
+    
+    private void performSearch() {
+        String searchQuery = searchField.getText().trim();
+        
+        if (searchQuery.isEmpty()) {
+            // If search is empty, show all warehouses inventory instead
+            String selectedWarehouse = (String) warehouseSelector.getSelectedItem();
+            if (selectedWarehouse != null && !selectedWarehouse.equals("Select a Warehouse...")) {
+                loadWarehouseInventory(selectedWarehouse);
+            } else {
+                loadAllWarehousesInventory();
+            }
+            return;
+        }
+        
+        // Recreate table with warehouse column for unified search results
+        String[] columnNames = {"Warehouse", "Item ID", "Item Name", "Quantity", "Unit Price", "Expiration Date", "Status"};
+        tableModel = new DefaultTableModel(columnNames, 0);
+        inventoryTable.setModel(tableModel);
+        
+        // Try to parse as item ID (numeric search)
+        Integer itemID = null;
+        try {
+            itemID = Integer.parseInt(searchQuery);
+        } catch (NumberFormatException e) {
+            // Not a number, will search as text first
+        }
+        
+        // Prepare lowercase search query for case-insensitive partial matching
+        String lowerSearchQuery = searchQuery.toLowerCase();
+        
+        // Search through all warehouses
+        for (Map.Entry<String, Warehouse> warehouseEntry : warehouseMap.entrySet()) {
+            String warehouseName = warehouseEntry.getKey();
+            Warehouse warehouse = warehouseEntry.getValue();
+            
+            try {
+                java.util.List<Item> results = new java.util.ArrayList<>();
+                java.util.Map<Integer, java.util.List<Item>> itemsByID = warehouse.getItemsByID();
+                
+                // Search for partial matches on item name (case-insensitive)
+                for (Map.Entry<Integer, java.util.List<Item>> entry : itemsByID.entrySet()) {
+                    String itemName = "Item " + entry.getKey();  // Match the naming convention used in display
+                    if (itemName.toLowerCase().contains(lowerSearchQuery)) {
+                        results.addAll(entry.getValue());
+                    }
+                }
+                
+                // If no name results found and query is numeric, try searching by ID
+                if (results.isEmpty() && itemID != null) {
+                    results.addAll(warehouse.searchByID(itemID));
+                }
+                
+                // Add results to table
+                for (Item item : results) {
+                    String exprDateStr = "N/A";
+                    if (item.isPerishable()) {
+                        PerishableItem perishable = (PerishableItem) item;
+                        if (perishable.getExpr() != null) {
+                            exprDateStr = perishable.getExpr().toString();
+                        }
+                    }
+                    
+                    tableModel.addRow(new Object[]{
+                        warehouseName,
+                        String.valueOf(item.getSKU()),
+                        "Item " + item.getSKU(),
+                        item.getStock(),
+                        0.0,
+                        exprDateStr,
+                        "Active"
+                    });
+                }
+            } catch (Exception ex) {
+                System.err.println("Error searching in " + warehouseName + ": " + ex.getMessage());
             }
         }
     }
@@ -306,10 +530,6 @@ public class UserGUI {
     
     public void addTransferItemListener(ActionListener listener) {
         transferItemButton.addActionListener(listener);
-    }
-    
-    public void addSearchListener(ActionListener listener) {
-        searchButton.addActionListener(listener);
     }
     
     public void addSortListener(ActionListener listener) {
