@@ -43,7 +43,7 @@ public class ItemID {
     }
     public boolean checkKeyword(String kw){
         for(int i = 0; i < keywords.length; i++)
-            if(keywords[i] == kw)
+            if(keywords[i].equals(kw))
                 return true;
         return false;
     }

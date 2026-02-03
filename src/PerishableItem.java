@@ -21,4 +21,8 @@ public class PerishableItem extends Item{
     public boolean isPerishable(){
         return true;
     }
+
+    public String toString(){
+        return super.toString() + "   Expires: " + exprDate;
+    }
 }
