@@ -140,10 +140,11 @@ public class UserGUI {
                     }
                     
                     String exprDateStr = (earliestExpiration != null) ? earliestExpiration.toString() : "N/A";
+                    String itemName = warehouse.getItemName(entry.getKey());
                     
                     itemsToDisplay.add(new Object[]{
                         String.valueOf(entry.getKey()),
-                        "Item " + entry.getKey(),
+                        itemName,
                         totalStock,
                         0.0,
                         exprDateStr,
@@ -219,10 +220,11 @@ public class UserGUI {
                             }
                         }
                         
+                        String itemName = warehouse.getItemName(item.getSKU());
                         allItems.add(new Object[]{
                             warehouseName,
                             String.valueOf(item.getSKU()),
-                            "Item " + item.getSKU(),
+                            itemName,
                             item.getStock(),
                             0.0,
                             exprDateStr,
@@ -446,15 +448,28 @@ public class UserGUI {
                 java.util.List<Item> results = new java.util.ArrayList<>();
                 java.util.Map<Integer, java.util.List<Item>> itemsByID = warehouse.getItemsByID();
                 
-                // Search for partial matches on item name (case-insensitive)
+                // Priority 1: Search for partial matches on keywords (case-insensitive)
                 for (Map.Entry<Integer, java.util.List<Item>> entry : itemsByID.entrySet()) {
-                    String itemName = "Item " + entry.getKey();  // Match the naming convention used in display
-                    if (itemName.toLowerCase().contains(lowerSearchQuery)) {
-                        results.addAll(entry.getValue());
+                    String[] keywords = warehouse.getItemKeywords(entry.getKey());
+                    for (String keyword : keywords) {
+                        if (keyword.toLowerCase().contains(lowerSearchQuery)) {
+                            results.addAll(entry.getValue());
+                            break;  // Don't add duplicates if multiple keywords match
+                        }
                     }
                 }
                 
-                // If no name results found and query is numeric, try searching by ID
+                // Priority 2: If no keyword results, search for partial matches on item name
+                if (results.isEmpty()) {
+                    for (Map.Entry<Integer, java.util.List<Item>> entry : itemsByID.entrySet()) {
+                        String itemName = warehouse.getItemName(entry.getKey());
+                        if (itemName.toLowerCase().contains(lowerSearchQuery)) {
+                            results.addAll(entry.getValue());
+                        }
+                    }
+                }
+                
+                // Priority 3: If no name results and query is numeric, search by ID
                 if (results.isEmpty() && itemID != null) {
                     results.addAll(warehouse.searchByID(itemID));
                 }
@@ -469,10 +484,11 @@ public class UserGUI {
                         }
                     }
                     
+                    String itemName = warehouse.getItemName(item.getSKU());
                     tableModel.addRow(new Object[]{
                         warehouseName,
                         String.valueOf(item.getSKU()),
-                        "Item " + item.getSKU(),
+                        itemName,
                         item.getStock(),
                         0.0,
                         exprDateStr,
