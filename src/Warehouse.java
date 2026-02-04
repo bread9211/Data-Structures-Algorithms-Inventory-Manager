@@ -28,8 +28,7 @@ public class Warehouse {
        ADD / REMOVE
        ========================= */
 
-    public int addItem(Item item,int sku) {
-        item.setInstance(nextInstanceID);
+    public int addItem(Item item,int sku){
         itemsByChrono.add(item);
 
         itemsBySKU.putIfAbsent(sku, new HashSet<>());
@@ -48,9 +47,9 @@ public class Warehouse {
         return addItem(item,sku);
     }
 
-    public void removeItemInstance(int instanceID) {
+    public Item removeItemInstance(int instanceID) {
         Item item = itemsByChrono.get(instanceID);
-        if (item == null) return;
+        if (item == null) return null;
 
         int sku = item.getSKU();
         itemsBySKU.get(sku).remove(instanceID);
@@ -59,12 +58,25 @@ public class Warehouse {
         }
         itemsByExpiration.remove(instanceID);
         itemsByChrono.set(instanceID,null);
+        return item;
     }
 
-    public boolean splitInstance(Item item, int amount){
+    public Item removeItemQuantity(int instanceID, int amount) {
+        Item item = itemsByChrono.get(instanceID);
         if(item.getStock() > amount){
-            addItem(new Item(item.getSKU(),amount,item.getAcquired()),item.getSKU());
+            Item copy = new Item(item.getSKU(),amount,item.getAcquired());
             item.removeItem(amount);
+            return copy;
+        }
+        return null;
+    }
+
+    public boolean splitInstance(int instanceID, int amount){
+        Item item = itemsByChrono.get(instanceID);
+        if(item.getStock() > amount){
+            Item copy = removeItemQuantity(instanceID, amount);
+            if(copy != null)
+                addItem(copy, copy.getSKU());
             return true;
         }
         return false;
@@ -178,13 +190,11 @@ public class Warehouse {
        TRANSFER
        ========================= */
     //NEEDS TO MAKE A TRANSACTION
-    public void transferTo(Warehouse other, int instanceID) {
-        Item item = itemsByChrono.get(instanceID);
-        if (item == null) return;
-
-        other.addItem(item,item.getSKU());
-        removeItemInstance(instanceID);
+    public void addTransaction(Transaction transaction){
+        transactions.add(transaction);
     }
+
+
 
     /* =========================
        DISPLAY
@@ -193,17 +203,7 @@ public class Warehouse {
     public void printInventory() {
         System.out.println("Warehouse: " + name);
         for (Item item : itemsByChrono) {
-            if(item.getStock() != 0)
-                System.out.println("  " + item);
-        }
-    }
-
-    public void printChronological() {
-        System.out.println("Chronological Log:");
-        for (Item item : itemsByChrono) {
-            if(item == null)
-                System.out.println("REMOVED");
-            else
+            if(item != null && item.getStock() != 0)
                 System.out.println("  " + item);
         }
     }

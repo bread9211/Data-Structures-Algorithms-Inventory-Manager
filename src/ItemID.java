@@ -4,20 +4,13 @@ public class ItemID {
     private int buyPrice;
     private int sellPrice;
     private String[] keywords;
-    private int deliveryTime;
-    private int expirationTime;
     
-    public ItemID(String name, int ID, int price, int cost, String[] keywords, int deliveryTime){
-        this(name,ID,price,cost,keywords,1,0);
-    }
-    public ItemID(String name, int ID, int price, int cost, String[] keywords, int deliveryTime, int expirationTime){
+    public ItemID(String name, int ID, int price, int cost, String[] keywords){
         itemName = name;
         SKU = ID;
         buyPrice = cost;
         sellPrice = price;
         this.keywords = keywords;
-        this.deliveryTime = deliveryTime;
-        this.expirationTime = expirationTime;
     }
 
     public void setSKU(int ID){
@@ -34,12 +27,6 @@ public class ItemID {
     }
     public int getSellPrice(){
         return sellPrice;
-    }
-    public int getExpr(){
-        return expirationTime;
-    }
-    public int getDelTime(){
-        return deliveryTime;
     }
     public boolean checkKeyword(String kw){
         for(int i = 0; i < keywords.length; i++)

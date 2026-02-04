@@ -2,7 +2,6 @@ import java.sql.Date;
 
 public class Item {
     private int SKU;
-    private int instanceID;
     protected int amount;
     private Date acquiredDate;
     
@@ -10,7 +9,6 @@ public class Item {
         SKU = ID;
         amount = num;
         acquiredDate = date;
-        instanceID = 0;
     }
     public Item(int num, Date date){
         this(-1,num,date);
@@ -32,12 +30,6 @@ public class Item {
     public Date getAcquired(){
         return acquiredDate;
     }
-    public int getInstance(){
-        return instanceID;
-    }
-    public void setInstance(int newInstance){
-        instanceID = newInstance;
-    }
     public void setSKU(int ID){
         SKU = ID;
     }
@@ -48,6 +40,6 @@ public class Item {
         return null;
     }
     public String toString(){
-        return  "Instance ID: " + instanceID + "   SKU: " + SKU + "   Stock: " + amount + "   Acquired: " + acquiredDate;
+        return  "SKU: " + SKU + "   Stock: " + amount + "   Acquired: " + acquiredDate;
     }
 }
