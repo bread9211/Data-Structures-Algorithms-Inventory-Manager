@@ -39,17 +39,19 @@ public class WarehouseManager {
         current.addItem(item,itemID);
     }
 
-    public void tradeItems(Warehouse other, Set<Integer> currentInstances, Set<Integer> otherInstances){
+    public void tradeItems(String other, Set<Integer> currentInstances, Set<Integer> otherInstances){
+        if(!warehouses.containsKey(other))
+            return;
         Set<Item> curItems = new HashSet<>();
         for(int id : currentInstances)
             curItems.add(current.removeItemInstance(id));
         Set<Item> othItems = new HashSet<>();
         for(int id : otherInstances)
-            othItems.add(other.removeItemInstance(id));
+            othItems.add(warehouses.get(other).removeItemInstance(id));
 
-        Transaction trade = new Trade(current,other,curItems,othItems);
+        Transaction trade = new Trade(current,warehouses.get(other),curItems,othItems);
         current.addTransaction(trade);
-        other.addTransaction(trade);
+        warehouses.get(other).addTransaction(trade);
     }
 
     public ItemID getItemID(int SKU){

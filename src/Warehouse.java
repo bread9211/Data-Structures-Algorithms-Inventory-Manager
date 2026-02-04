@@ -62,10 +62,22 @@ public class Warehouse {
         return item;
     }
 
-    public boolean splitInstance(Item item, int amount){
+    public Item removeItemQuantity(int instanceID, int amount) {
+        Item item = itemsByChrono.get(instanceID);
         if(item.getStock() > amount){
-            addItem(new Item(item.getSKU(),amount,item.getAcquired()),item.getSKU());
+            Item copy = new Item(item.getSKU(),amount,item.getAcquired());
             item.removeItem(amount);
+            return copy;
+        }
+        return null;
+    }
+
+    public boolean splitInstance(int instanceID, int amount){
+        Item item = itemsByChrono.get(instanceID);
+        if(item.getStock() > amount){
+            Item copy = removeItemQuantity(instanceID, amount);
+            if(copy != null)
+                addItem(copy, copy.getSKU());
             return true;
         }
         return false;
