@@ -28,8 +28,7 @@ public class Warehouse {
        ADD / REMOVE
        ========================= */
 
-    public int addItem(Item item,int sku) {
-        item.setInstance(nextInstanceID);
+    public int addItem(Item item,int sku){
         itemsByChrono.add(item);
 
         itemsBySKU.putIfAbsent(sku, new HashSet<>());

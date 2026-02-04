@@ -16,7 +16,7 @@ public class LocalItemID{
     public LocalItemID(ItemID itemID, int stock){
         reference = itemID;
         this.stock = stock;
-        this.demand = stock/itemID.getDelTime();
+        this.demand = stock;
         dailyPurchased = 0;
         volatility = 1;
     }
@@ -52,6 +52,6 @@ public class LocalItemID{
 
     //Calculates amount of stock to buy to maintain enough for deliveryTime days of customers
     public int predict(){
-        return ((demand * 4 +1)/3)* reference.getDelTime() - stock;
+        return demand - stock;
     }
 }

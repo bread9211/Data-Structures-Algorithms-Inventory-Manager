@@ -1,4 +1,5 @@
 import java.sql.Date;
+import java.time.LocalDate;
 
 public class PerishableItem extends Item{
     private Date exprDate;
@@ -15,8 +16,8 @@ public class PerishableItem extends Item{
     public Date getExpr(){
         return exprDate;
     }
-    public boolean checkExpr(Date current){
-        return exprDate.before(current);
+    public boolean checkExpr(){
+        return false;
     }
     public boolean isPerishable(){
         return true;
