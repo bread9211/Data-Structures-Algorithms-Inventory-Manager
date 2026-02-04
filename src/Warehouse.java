@@ -134,6 +134,28 @@ public class Warehouse {
         return result;
     }
 
+    public String getItemName(int sku) {
+        if (stockedIDs.containsKey(sku)) {
+            return stockedIDs.get(sku).getReference().getName();
+        }
+        return "Item " + sku;  // Fallback if name not found
+    }
+
+    public String[] getItemKeywords(int sku) {
+        if (stockedIDs.containsKey(sku)) {
+            ItemID itemID = stockedIDs.get(sku).getReference();
+            // Use reflection to access keywords since they're private
+            try {
+                java.lang.reflect.Field field = ItemID.class.getDeclaredField("keywords");
+                field.setAccessible(true);
+                return (String[]) field.get(itemID);
+            } catch (Exception e) {
+                return new String[]{};
+            }
+        }
+        return new String[]{};
+    }
+
     /* =========================
        SORTING
        ========================= */
