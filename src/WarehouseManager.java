@@ -28,6 +28,11 @@ public class WarehouseManager {
         warehouses.put(name,w);
         current = w;
     }
+    public void addWarehouse(Warehouse w) {
+        warehouses.put(w.getName(),w);
+        current = w;
+    }
+
     public void addOwned(Item item){
         current.addItem(item,stockedIDs.get(item.getSKU()));
     }
