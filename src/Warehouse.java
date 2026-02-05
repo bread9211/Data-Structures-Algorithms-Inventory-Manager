@@ -1,12 +1,16 @@
 import java.util.*;
 import java.sql.Date;
+import java.time.LocalDate;
+import java.util.Iterator;
+
+import javax.swing.event.InternalFrameEvent;
 
 public class Warehouse {
 
     private String name;
     private Map<Integer, Set<Integer>> itemsBySKU;
     private Map<Integer,LocalItemID> stockedIDs;
-    private Map<Integer, Date> itemsByExpiration;
+    private Map<Integer, LocalDate> itemsByExpiration;
     private List<Item> itemsByChrono;
     private List<Transaction> transactions;
     private int nextInstanceID;
@@ -30,6 +34,7 @@ public class Warehouse {
 
     public int addItem(Item item,int sku){
         itemsByChrono.add(item);
+        item.setID(nextInstanceID);
 
         itemsBySKU.putIfAbsent(sku, new HashSet<>());
         itemsBySKU.get(sku).add(nextInstanceID);
@@ -63,12 +68,37 @@ public class Warehouse {
 
     public Item removeItemQuantity(int instanceID, int amount) {
         Item item = itemsByChrono.get(instanceID);
-        if(item.getStock() > amount){
-            Item copy = new Item(item.getSKU(),amount,item.getAcquired());
-            item.removeItem(amount);
-            return copy;
+        if(amount > item.getStock())
+            return null;
+        Item copy = new Item(item.getSKU(),amount,item.getAcquired());
+        item.removeItem(amount);
+        return copy;
+    }
+
+    public List<Item> removeSKUQuantity(int SKU, int amount) {
+        LocalItemID itemID = stockedIDs.get(SKU);
+        if(amount > itemID.getStock())
+            return null;
+
+        List<Item> allItems = searchBySKU(SKU);
+        List<Item> returnItems = new ArrayList<Item>();
+        Iterator<Item> it = allItems.iterator();
+        Item item;
+        int stock;
+        while(amount > 0){
+            item = it.next();
+            stock = item.getStock();
+            if(stock > amount){
+                returnItems.add(removeItemQuantity(item.getID(),amount));
+                amount = 0;
+            }else if(stock < 0)
+                    removeItemInstance(item.getID());
+            else{
+                amount -= stock;
+                returnItems.add(removeItemInstance(item.getID()));
+            }
         }
-        return null;
+        return returnItems;
     }
 
     public boolean splitInstance(int instanceID, int amount){

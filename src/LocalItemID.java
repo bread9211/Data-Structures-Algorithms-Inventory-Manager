@@ -25,20 +25,11 @@ public class LocalItemID{
         return reference;
     }
 
-
     public void addStock(int change){
         stock += change;
     }
-
-    public int purchase(int purchased){
-        if(stock - purchased > 0){
-            stock -= purchased;
-            return -1;
-        }else if(stock == purchased){
-            stock = 0;
-            return 0;
-        }else
-            return purchased-stock;
+    public int getStock(){
+        return stock;
     }
 
     //Daily increment

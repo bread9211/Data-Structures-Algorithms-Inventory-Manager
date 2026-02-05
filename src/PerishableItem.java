@@ -1,23 +1,27 @@
-import java.sql.Date;
 import java.time.LocalDate;
 
 public class PerishableItem extends Item{
-    private Date exprDate;
+    private LocalDate exprDate;
     
-    public PerishableItem(int SKU, int num, Date pDate, Date eDate){
+    public PerishableItem(int SKU, int num, LocalDate pDate, LocalDate eDate){
         super(SKU,num,pDate);
         exprDate = eDate;
     }
-    public PerishableItem(int num, Date pDate, Date eDate){
+    public PerishableItem(int num, LocalDate pDate, LocalDate eDate){
         super(num,pDate);
         exprDate = eDate;
     }
+    public int getStock(){
+        if(!checkExpr(LocalDate.now()))
+            return super.getStock();
+        return -1*super.getStock();
 
-    public Date getExpr(){
+    }
+    public LocalDate getExpr(){
         return exprDate;
     }
-    public boolean checkExpr(){
-        return false;
+    public boolean checkExpr(LocalDate current){
+        return exprDate.isBefore(current);
     }
     public boolean isPerishable(){
         return true;
