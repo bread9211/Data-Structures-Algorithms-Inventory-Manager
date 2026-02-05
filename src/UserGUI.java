@@ -246,8 +246,8 @@ public class UserGUI {
             allItems.sort((a, b) -> ((String) a[2]).compareToIgnoreCase((String) b[2]));
         } else if (currentSortMode.equals("Expiration Date")) {
             allItems.sort((a, b) -> {
-                Date dateA = (Date) a[8];
-                Date dateB = (Date) b[8];
+                java.time.LocalDate dateA = (java.time.LocalDate) a[8];
+                java.time.LocalDate dateB = (java.time.LocalDate) b[8];
                 // Items with no expiration date go to the end
                 if (dateA == null && dateB == null) return 0;
                 if (dateA == null) return 1;
