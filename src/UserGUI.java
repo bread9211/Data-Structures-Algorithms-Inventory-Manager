@@ -368,6 +368,9 @@ public class UserGUI {
         // Hook up Sell Item button
         sellItemButton.addActionListener(e -> openRemoveItemDialog());
         
+        // Hook up Transfer Item button
+        transferItemButton.addActionListener(e -> openTransferItemDialog());
+        
         // Hook up Sort By button
         sortButton.addActionListener(e -> openSortDialog());
         
@@ -422,6 +425,21 @@ public class UserGUI {
         if (dialog.isConfirmed()) {
             currentSortMode = dialog.getSelectedSortMode();
             // Reload current view with new sort mode
+            String selectedWarehouse = (String) warehouseSelector.getSelectedItem();
+            if (selectedWarehouse != null && !selectedWarehouse.equals("Select a Warehouse...")) {
+                loadWarehouseInventory(selectedWarehouse);
+            } else {
+                loadAllWarehousesInventory();
+            }
+        }
+    }
+    
+    private void openTransferItemDialog() {
+        TransferItemDialog dialog = new TransferItemDialog(frame, warehouseMap, warehouseManager);
+        dialog.setVisible(true);
+        
+        if (dialog.isConfirmed()) {
+            // Refresh inventory to show changes
             String selectedWarehouse = (String) warehouseSelector.getSelectedItem();
             if (selectedWarehouse != null && !selectedWarehouse.equals("Select a Warehouse...")) {
                 loadWarehouseInventory(selectedWarehouse);

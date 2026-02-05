@@ -152,7 +152,29 @@ public class AddItemDialog extends JDialog {
             // Validate that item ID exists in any warehouse
             List<Item> items = warehouse.searchByID(itemID);
             if (items.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Item ID " + itemID + " is not a known item.", "Invalid Item", JOptionPane.WARNING_MESSAGE);
+                // Item ID doesn't exist - prompt user to register new item
+                int response = JOptionPane.showConfirmDialog(
+                    this,
+                    "Item ID " + itemID + " does not exist.\n\nWould you like to register a new item with this ID?",
+                    "Item Not Found",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE
+                );
+                
+                if (response == JOptionPane.YES_OPTION) {
+                    // Open register new item dialog
+                    RegisterItemDialog registerDialog = new RegisterItemDialog((JFrame) SwingUtilities.getWindowAncestor(this), itemID, warehouse);
+                    registerDialog.setVisible(true);
+                    
+                    if (registerDialog.isConfirmed()) {
+                        // Item was registered, now add it to warehouse
+                        Item newItem = new Item(itemID, quantity, null);
+                        warehouse.addItem(newItem, itemID);
+                        
+                        confirmed = true;
+                        dispose();
+                    }
+                }
                 return;
             }
             
