@@ -27,7 +27,7 @@ public class LocalItemID{
         return reference;
     }
 
-    public void changeStock(int change){
+    public void addStock(int change){
         stock += change;
     }
     public void purchase(int purchased){
