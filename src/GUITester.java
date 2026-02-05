@@ -28,11 +28,11 @@ public class GUITester {
         ItemID lettuce = new ItemID("Lettuce", 1004, 100, 50, new String[]{"vegetable", "produce"});
         ItemID tomato = new ItemID("Tomato", 1005, 120, 70, new String[]{"vegetable", "produce"});
         
-        warehouseA.addItem(new PerishableItem(1001, 150, null, java.sql.Date.valueOf("2026-02-14")), banana);
-        warehouseA.addItem(new PerishableItem(1002, 200, null, java.sql.Date.valueOf("2026-02-20")), apple);
-        warehouseA.addItem(new PerishableItem(1003, 75, null, java.sql.Date.valueOf("2026-02-18")), orange);
-        warehouseA.addItem(new PerishableItem(1004, 100, null, java.sql.Date.valueOf("2026-02-08")), lettuce);
-        warehouseA.addItem(new PerishableItem(1005, 50, null, java.sql.Date.valueOf("2026-02-15")), tomato);
+        warehouseA.addItem(new PerishableItem(1001, 150, null, java.time.LocalDate.parse("2026-02-14")), banana);
+        warehouseA.addItem(new PerishableItem(1002, 200, null, java.time.LocalDate.parse("2026-02-20")), apple);
+        warehouseA.addItem(new PerishableItem(1003, 75, null, java.time.LocalDate.parse("2026-02-18")), orange);
+        warehouseA.addItem(new PerishableItem(1004, 100, null, java.time.LocalDate.parse("2026-02-08")), lettuce);
+        warehouseA.addItem(new PerishableItem(1005, 50, null, java.time.LocalDate.parse("2026-02-15")), tomato);
         
         // Warehouse B - Hardware
         ItemID m3Screw = new ItemID("M3 Screw", 2001, 50, 30, new String[]{"hardware", "fastener"});
@@ -56,7 +56,7 @@ public class GUITester {
         warehouseC.addItem(new Item(3002, 60, null), pen);
         warehouseC.addItem(new Item(3003, 200, null), pencil);
         warehouseC.addItem(new Item(3004, 50, null), paperReam);
-        warehouseC.addItem(new PerishableItem(3005, 75, null, java.sql.Date.valueOf("2026-08-04")), coffee);
+        warehouseC.addItem(new PerishableItem(3005, 75, null, java.time.LocalDate.parse("2026-08-04")), coffee);
         
         // Refresh the inventory display to show all items
         gui.refreshInventory();

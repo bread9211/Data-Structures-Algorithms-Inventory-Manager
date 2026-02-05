@@ -5,7 +5,7 @@ import javax.swing.event.DocumentEvent;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import com.formdev.flatlaf.*;
-import java.sql.Date;
+import java.time.LocalDate;
 import java.util.*;
 public class UserGUI {
     private JFrame frame;
@@ -117,21 +117,21 @@ public class UserGUI {
                 
                 for (Map.Entry<Integer, java.util.List<Item>> entry : itemsByID.entrySet()) {
                     int totalStock = 0;
-                    Date lastAcquired = null;
-                    Date earliestExpiration = null;
+                    LocalDate lastAcquired = null;
+                    LocalDate earliestExpiration = null;
                     boolean hasPerishable = false;
                     
                     for (Item item : entry.getValue()) {
                         totalStock += item.getStock();
-                        if (lastAcquired == null || item.getAcquired().after(lastAcquired)) {
+                        if (lastAcquired == null || item.getAcquired().isAfter(lastAcquired)) {
                             lastAcquired = item.getAcquired();
                         }
                         
                         if (item.isPerishable()) {
                             PerishableItem perishable = (PerishableItem) item;
-                            Date exprDate = perishable.getExpr();
+                            LocalDate exprDate = perishable.getExpr();
                             if (exprDate != null) {
-                                if (earliestExpiration == null || exprDate.before(earliestExpiration)) {
+                                if (earliestExpiration == null || exprDate.isBefore(earliestExpiration)) {
                                     earliestExpiration = exprDate;
                                 }
                                 hasPerishable = true;
@@ -210,7 +210,7 @@ public class UserGUI {
                 // Show each item instance separately
                 for (Map.Entry<Integer, java.util.List<Item>> entry : itemsByID.entrySet()) {
                     for (Item item : entry.getValue()) {
-                        Date exprDate = null;
+                        LocalDate exprDate = null;
                         String exprDateStr = "N/A";
                         if (item.isPerishable()) {
                             PerishableItem perishable = (PerishableItem) item;

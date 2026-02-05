@@ -291,30 +291,24 @@ public class TransferItemDialog extends JDialog {
         }
         
         Warehouse sourceWh = warehouseMap.get(sourceWarehouse);
-        Warehouse recipientWh = warehouseMap.get(recipientWarehouse);
         
         int transferredQty = 0;
+        Set<Integer> instancesToTransfer = new java.util.HashSet<>();
         
-        // For each SKU, transfer the specified quantity
+        // For each SKU, prepare instances to transfer
         for (java.util.Map.Entry<Integer, Integer> entry : skuToQuantity.entrySet()) {
             int sku = entry.getKey();
             int quantityToTransfer = entry.getValue();
-            
-            // Get the ItemID info for this SKU
-            String itemName = sourceWh.getItemName(sku);
-            String[] keywords = sourceWh.getItemKeywords(sku);
-            int[] prices = getItemPrices(sourceWh, sku);
-            ItemID itemID = new ItemID(itemName, sku, prices[0], prices[1], keywords);
             
             // Get instance IDs for this SKU
             Set<Integer> instanceIDs = getInstanceIDsForSKU(sourceWh, sku);
             if (instanceIDs == null) continue;
             
-            // Transfer items from each instance until we've transferred the desired quantity
+            // For each instance, handle full or partial transfers
             int remainingQty = quantityToTransfer;
-            java.util.List<Integer> instancesToRemove = new java.util.ArrayList<>();
+            java.util.List<Integer> instanceList = new java.util.ArrayList<>(instanceIDs);
             
-            for (int instanceID : instanceIDs) {
+            for (int instanceID : instanceList) {
                 if (remainingQty <= 0) break;
                 
                 Item item = getItemByInstanceID(sourceWh, instanceID);
@@ -323,33 +317,41 @@ public class TransferItemDialog extends JDialog {
                 int itemStock = item.getStock();
                 int qtyFromThisInstance = Math.min(remainingQty, itemStock);
                 
-                // Create a copy with the transfer quantity
-                Item copiedItem = new Item(item.getSKU(), qtyFromThisInstance, item.getAcquired());
-                if (item instanceof PerishableItem) {
-                    copiedItem = new PerishableItem(item.getSKU(), qtyFromThisInstance, item.getAcquired(), ((PerishableItem) item).getExpr());
-                }
-                
-                // Add to recipient warehouse
-                recipientWh.addItem(copiedItem, itemID);
-                transferredQty += qtyFromThisInstance;
-                
-                // Remove the transferred quantity from source
                 if (qtyFromThisInstance == itemStock) {
-                    // Remove entire instance if we're transferring all of it
-                    instancesToRemove.add(instanceID);
+                    // Transfer the entire instance
+                    instancesToTransfer.add(instanceID);
+                    transferredQty += qtyFromThisInstance;
                 } else {
-                    // Reduce quantity if we're only transferring part of it
-                    sourceWh.removeItemQuantity(instanceID, qtyFromThisInstance);
+                    // Split instance: transfer part, keep part in source
+                    sourceWh.splitInstance(instanceID, itemStock - qtyFromThisInstance);
+                    // The split creates a new instance with qtyFromThisInstance, find and transfer it
+                    // After splitInstance, a new instance is created - we need to get the newly created instance
+                    Set<Integer> currentInstances = getInstanceIDsForSKU(sourceWh, sku);
+                    int newInstanceID = -1;
+                    for (int id : currentInstances) {
+                        if (!instanceList.contains(id)) {
+                            newInstanceID = id;
+                            break;
+                        }
+                    }
+                    if (newInstanceID != -1) {
+                        instancesToTransfer.add(newInstanceID);
+                        transferredQty += qtyFromThisInstance;
+                    }
                 }
                 
                 remainingQty -= qtyFromThisInstance;
             }
-            
-            // Remove the instances we transferred completely
-            for (int instanceID : instancesToRemove) {
-                sourceWh.removeItemInstance(instanceID);
-            }
         }
+        
+        if (instancesToTransfer.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No items to transfer.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // Use WarehouseManager to perform the trade
+        warehouseManager.setCurrent(sourceWarehouse);
+        warehouseManager.tradeItems(recipientWarehouse, instancesToTransfer, new java.util.HashSet<>());
         
         confirmed = true;
         JOptionPane.showMessageDialog(this, transferredQty + " unit(s) transferred successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);

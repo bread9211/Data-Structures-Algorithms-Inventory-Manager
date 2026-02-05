@@ -47,22 +47,60 @@ public class WarehouseManager {
     public void tradeItems(String other, Set<Integer> currentInstances, Set<Integer> otherInstances){
         if(!warehouses.containsKey(other))
             return;
+        
+        Warehouse otherWarehouse = warehouses.get(other);
         Set<Item> curItems = new HashSet<>();
         Item item;
+        
+        // Transfer items from current warehouse to other warehouse
         for(int id : currentInstances){
             item = current.removeItemInstance(id);
-            curItems.add(item);
-            warehouses.get(other).addItem(item, stockedIDs.get(item.getSKU()));
+            if (item != null) {
+                curItems.add(item);
+                // Get ItemID from current warehouse's stockedIDs
+                ItemID itemID = getItemIDFromWarehouse(current, item.getSKU());
+                if (itemID != null) {
+                    otherWarehouse.addItem(item, itemID);
+                } else {
+                    otherWarehouse.addItem(item, item.getSKU());
+                }
+            }
         }
+        
         Set<Item> othItems = new HashSet<>();
+        // Transfer items from other warehouse to current warehouse
         for(int id : otherInstances){
-            item = warehouses.get(other).removeItemInstance(id);
-            othItems.add(item);
-            current.addItem(item, stockedIDs.get(item.getSKU()));
+            item = otherWarehouse.removeItemInstance(id);
+            if (item != null) {
+                othItems.add(item);
+                // Get ItemID from other warehouse's stockedIDs
+                ItemID itemID = getItemIDFromWarehouse(otherWarehouse, item.getSKU());
+                if (itemID != null) {
+                    current.addItem(item, itemID);
+                } else {
+                    current.addItem(item, item.getSKU());
+                }
+            }
         }
-        Transaction trade = new Trade(current,warehouses.get(other),curItems,othItems);
+        
+        Transaction trade = new Trade(current, otherWarehouse, curItems, othItems);
         current.addTransaction(trade);
-        warehouses.get(other).addTransaction(trade);
+        otherWarehouse.addTransaction(trade);
+    }
+    
+    private ItemID getItemIDFromWarehouse(Warehouse warehouse, int sku) {
+        try {
+            java.lang.reflect.Field stockedIDsField = Warehouse.class.getDeclaredField("stockedIDs");
+            stockedIDsField.setAccessible(true);
+            java.util.Map<Integer, LocalItemID> stockedIDs = (java.util.Map<Integer, LocalItemID>) stockedIDsField.get(warehouse);
+            
+            if (stockedIDs.containsKey(sku)) {
+                return stockedIDs.get(sku).getReference();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public ItemID getItemID(int SKU){
