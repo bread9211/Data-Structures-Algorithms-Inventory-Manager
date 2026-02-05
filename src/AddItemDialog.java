@@ -3,6 +3,8 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
 
 public class AddItemDialog extends JDialog {
     private JTextField itemIDField;
@@ -10,6 +12,9 @@ public class AddItemDialog extends JDialog {
     private JLabel itemNameLabel;
     private JButton addButton;
     private JButton cancelButton;
+    private JList<String> searchResultsList;
+    private DefaultListModel<String> searchResultsModel;
+    private JScrollPane searchScrollPane;
     
     private boolean confirmed = false;
     private Warehouse warehouse;
@@ -19,7 +24,7 @@ public class AddItemDialog extends JDialog {
         super(parent, "Add Item to Warehouse", true);
         this.warehouse = warehouse;
         this.warehouseManager = warehouseManager;
-        setSize(500, 300);
+        setSize(500, 450);
         setLocationRelativeTo(parent);
         setResizable(false);
         
@@ -46,25 +51,57 @@ public class AddItemDialog extends JDialog {
         itemIDField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
+                updateSearchResults();
                 updateItemName();
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
+                updateSearchResults();
                 updateItemName();
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
+                updateSearchResults();
                 updateItemName();
             }
         });
         mainPanel.add(itemIDField, gbc);
         
-        // Item Name Label (display only)
+        // Search Results Label
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.weightx = 0.3;
+        mainPanel.add(new JLabel("Search Results:"), gbc);
+        
+        // Search Results List
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        gbc.weightx = 0.7;
+        gbc.weighty = 0.5;
+        gbc.fill = GridBagConstraints.BOTH;
+        searchResultsModel = new DefaultListModel<>();
+        searchResultsList = new JList<>(searchResultsModel);
+        searchResultsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        searchResultsList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting() && searchResultsList.getSelectedValue() != null) {
+                String selected = searchResultsList.getSelectedValue();
+                // Extract SKU from "SKU - ItemName" format
+                String sku = selected.split(" - ")[0];
+                itemIDField.setText(sku);
+            }
+        });
+        searchScrollPane = new JScrollPane(searchResultsList);
+        searchScrollPane.setPreferredSize(new Dimension(300, 100));
+        mainPanel.add(searchScrollPane, gbc);
+        
+        // Item Name Label (display only)
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weightx = 0.3;
+        gbc.weighty = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
         mainPanel.add(new JLabel("Item Name:"), gbc);
         
         gbc.gridx = 1;
@@ -75,7 +112,7 @@ public class AddItemDialog extends JDialog {
         
         // Quantity Label and Field
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         gbc.weightx = 0.3;
         mainPanel.add(new JLabel("Quantity:"), gbc);
         
@@ -97,12 +134,70 @@ public class AddItemDialog extends JDialog {
         buttonPanel.add(cancelButton);
         
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.EAST;
         mainPanel.add(buttonPanel, gbc);
         
         add(mainPanel);
+    }
+    
+    private void updateSearchResults() {
+        searchResultsModel.clear();
+        
+        try {
+            String skuText = itemIDField.getText().trim();
+            if (skuText.isEmpty()) {
+                return;
+            }
+            
+            // Collect all unique SKUs across all warehouses
+            java.util.Set<Integer> allSkus = new java.util.HashSet<>();
+            java.util.Map<Integer, String> skuToName = new java.util.HashMap<>();
+            
+            if (warehouseManager != null) {
+                try {
+                    java.lang.reflect.Field warehousesField = WarehouseManager.class.getDeclaredField("warehouses");
+                    warehousesField.setAccessible(true);
+                    Map<String, Warehouse> warehouses = (Map<String, Warehouse>) warehousesField.get(warehouseManager);
+                    
+                    // Search across all warehouses
+                    for (Warehouse wh : warehouses.values()) {
+                        Map<Integer, List<Item>> itemsByID = wh.getItemsByID();
+                        for (Integer sku : itemsByID.keySet()) {
+                            allSkus.add(sku);
+                            // Get the name from the first warehouse that has this SKU
+                            if (!skuToName.containsKey(sku)) {
+                                String itemName = wh.getItemName(sku);
+                                skuToName.put(sku, itemName);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else if (warehouse != null) {
+                // Fallback: search only current warehouse if warehouseManager is unavailable
+                Map<Integer, List<Item>> itemsByID = warehouse.getItemsByID();
+                for (Integer sku : itemsByID.keySet()) {
+                    allSkus.add(sku);
+                    String itemName = warehouse.getItemName(sku);
+                    skuToName.put(sku, itemName);
+                }
+            }
+            
+            // Search for SKUs that start with the input
+            for (Integer sku : allSkus) {
+                String skuStr = String.valueOf(sku);
+                if (skuStr.startsWith(skuText)) {
+                    String itemName = skuToName.getOrDefault(sku, "Unknown");
+                    String displayText = sku + " - " + itemName;
+                    searchResultsModel.addElement(displayText);
+                }
+            }
+        } catch (NumberFormatException ex) {
+            // Ignore - user is still typing
+        }
     }
     
     private void updateItemName() {
@@ -117,17 +212,39 @@ public class AddItemDialog extends JDialog {
             int itemID = Integer.parseInt(idText);
             
             // Search all warehouses for this item ID
+            boolean found = false;
             if (warehouseManager != null) {
+                try {
+                    java.lang.reflect.Field warehousesField = WarehouseManager.class.getDeclaredField("warehouses");
+                    warehousesField.setAccessible(true);
+                    Map<String, Warehouse> warehouses = (Map<String, Warehouse>) warehousesField.get(warehouseManager);
+                    
+                    for (Warehouse wh : warehouses.values()) {
+                        List<Item> items = wh.searchByID(itemID);
+                        if (!items.isEmpty()) {
+                            itemNameLabel.setText("Item ID " + itemID + " (found in warehouses)");
+                            itemNameLabel.setForeground(new Color(0, 100, 0));
+                            found = true;
+                            break;
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            
+            if (!found) {
+                // Check current warehouse as fallback
                 List<Item> items = warehouse.searchByID(itemID);
                 if (!items.isEmpty()) {
                     itemNameLabel.setText("Item ID " + itemID + " (found in warehouse)");
                     itemNameLabel.setForeground(new Color(0, 100, 0));
                     return;
                 }
+                
+                itemNameLabel.setText("Unknown Item ID");
+                itemNameLabel.setForeground(new Color(200, 100, 100));
             }
-            
-            itemNameLabel.setText("Unknown Item ID");
-            itemNameLabel.setForeground(new Color(200, 100, 100));
         } catch (NumberFormatException ex) {
             itemNameLabel.setText("Invalid ID");
             itemNameLabel.setForeground(new Color(200, 100, 100));
@@ -149,9 +266,39 @@ public class AddItemDialog extends JDialog {
                 return;
             }
             
-            // Validate that item ID exists in any warehouse
-            List<Item> items = warehouse.searchByID(itemID);
-            if (items.isEmpty()) {
+            // Validate that item ID exists in any warehouse and get its ItemID
+            boolean itemExists = false;
+            ItemID existingItemID = null;
+            if (warehouseManager != null) {
+                try {
+                    java.lang.reflect.Field warehousesField = WarehouseManager.class.getDeclaredField("warehouses");
+                    warehousesField.setAccessible(true);
+                    Map<String, Warehouse> warehouses = (Map<String, Warehouse>) warehousesField.get(warehouseManager);
+                    
+                    for (Warehouse wh : warehouses.values()) {
+                        List<Item> items = wh.searchByID(itemID);
+                        if (!items.isEmpty()) {
+                            itemExists = true;
+                            // Get the ItemID from this warehouse
+                            existingItemID = wh.getItemIDForSKU(itemID);
+                            break;
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            
+            // Fallback: check current warehouse
+            if (!itemExists) {
+                List<Item> items = warehouse.searchByID(itemID);
+                if (!items.isEmpty()) {
+                    itemExists = true;
+                    existingItemID = warehouse.getItemIDForSKU(itemID);
+                }
+            }
+            
+            if (!itemExists) {
                 // Item ID doesn't exist - prompt user to register new item
                 int response = JOptionPane.showConfirmDialog(
                     this,
@@ -180,7 +327,13 @@ public class AddItemDialog extends JDialog {
             
             // Add item to warehouse directly
             Item newItem = new Item(itemID, quantity, null);
-            warehouse.addItem(newItem, itemID);
+            if (existingItemID != null) {
+                // Use the existing ItemID from another warehouse
+                warehouse.addItem(newItem, existingItemID);
+            } else {
+                // Fallback: use just the SKU (shouldn't happen if item exists)
+                warehouse.addItem(newItem, itemID);
+            }
             
             confirmed = true;
             dispose();

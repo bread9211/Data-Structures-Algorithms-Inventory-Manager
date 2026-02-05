@@ -53,6 +53,26 @@ public class TransferItemDialog extends JDialog {
         for (String warehouseName : warehouseMap.keySet()) {
             sourceWarehouseCombo.addItem(warehouseName);
         }
+        
+        // Set default source warehouse to current warehouse if available, otherwise first warehouse
+        String defaultSource = null;
+        Warehouse currentWarehouse = warehouseManager.getCurrent();
+        if (currentWarehouse != null) {
+            // Find the name of the current warehouse
+            for (Map.Entry<String, Warehouse> entry : warehouseMap.entrySet()) {
+                if (entry.getValue() == currentWarehouse) {
+                    defaultSource = entry.getKey();
+                    break;
+                }
+            }
+        }
+        
+        if (defaultSource != null) {
+            sourceWarehouseCombo.setSelectedItem(defaultSource);
+        } else if (sourceWarehouseCombo.getItemCount() > 0) {
+            sourceWarehouseCombo.setSelectedIndex(0);
+        }
+        
         sourceWarehouseCombo.addActionListener(e -> {
             updateRecipientWarehouseCombo();
             updateItemsTable();
@@ -322,10 +342,10 @@ public class TransferItemDialog extends JDialog {
                     instancesToTransfer.add(instanceID);
                     transferredQty += qtyFromThisInstance;
                 } else {
-                    // Split instance: transfer part, keep part in source
-                    sourceWh.splitInstance(instanceID, itemStock - qtyFromThisInstance);
-                    // The split creates a new instance with qtyFromThisInstance, find and transfer it
-                    // After splitInstance, a new instance is created - we need to get the newly created instance
+                    // Split instance: keep part in source, transfer part
+                    sourceWh.splitInstance(instanceID, qtyFromThisInstance);
+                    // After splitInstance with qtyFromThisInstance, the original instance is reduced to (itemStock - qtyFromThisInstance)
+                    // and a new instance is created with qtyFromThisInstance to transfer
                     Set<Integer> currentInstances = getInstanceIDsForSKU(sourceWh, sku);
                     int newInstanceID = -1;
                     for (int id : currentInstances) {

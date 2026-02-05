@@ -39,6 +39,16 @@ public class Warehouse {
         itemsBySKU.putIfAbsent(sku, new HashSet<>());
         itemsBySKU.get(sku).add(nextInstanceID);
 
+        // Ensure stockedIDs is updated even when using the int sku version
+        if (!stockedIDs.containsKey(sku)) {
+            // Create a default ItemID reference for tracking
+            ItemID defaultItem = new ItemID("Item " + sku, sku, 0, 0, new String[]{});
+            stockedIDs.put(sku, new LocalItemID(defaultItem, item.getStock()));
+        } else {
+            // Update the stock count in the existing entry
+            stockedIDs.get(sku).addStock(item.getStock());
+        }
+
         if (item.isPerishable())
             itemsByExpiration.put(nextInstanceID, item.getExpr());
         nextInstanceID++;
@@ -169,6 +179,13 @@ public class Warehouse {
             return stockedIDs.get(sku).getReference().getName();
         }
         return "Item " + sku;  // Fallback if name not found
+    }
+
+    public ItemID getItemIDForSKU(int sku) {
+        if (stockedIDs.containsKey(sku)) {
+            return stockedIDs.get(sku).getReference();
+        }
+        return null;
     }
 
     public String[] getItemKeywords(int sku) {

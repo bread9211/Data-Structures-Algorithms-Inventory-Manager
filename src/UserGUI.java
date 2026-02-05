@@ -95,6 +95,7 @@ public class UserGUI {
     private void onWarehouseSelected() {
         String selectedWarehouse = (String) warehouseSelector.getSelectedItem();
         if (selectedWarehouse != null && !selectedWarehouse.equals("Select a Warehouse...")) {
+            warehouseManager.setCurrent(selectedWarehouse);
             loadWarehouseInventory(selectedWarehouse);
         } else {
             loadAllWarehousesInventory();
@@ -161,8 +162,8 @@ public class UserGUI {
                     itemsToDisplay.sort((a, b) -> ((String) a[1]).compareToIgnoreCase((String) b[1]));
                 } else if (currentSortMode.equals("Expiration Date")) {
                     itemsToDisplay.sort((a, b) -> {
-                        Date dateA = (Date) a[7];
-                        Date dateB = (Date) b[7];
+                        LocalDate dateA = (LocalDate) a[7];
+                        LocalDate dateB = (LocalDate) b[7];
                         // Items with no expiration date go to the end
                         if (dateA == null && dateB == null) return 0;
                         if (dateA == null) return 1;
@@ -246,8 +247,8 @@ public class UserGUI {
             allItems.sort((a, b) -> ((String) a[2]).compareToIgnoreCase((String) b[2]));
         } else if (currentSortMode.equals("Expiration Date")) {
             allItems.sort((a, b) -> {
-                Date dateA = (Date) a[8];
-                Date dateB = (Date) b[8];
+                LocalDate dateA = (LocalDate) a[8];
+                LocalDate dateB = (LocalDate) b[8];
                 // Items with no expiration date go to the end
                 if (dateA == null && dateB == null) return 0;
                 if (dateA == null) return 1;
