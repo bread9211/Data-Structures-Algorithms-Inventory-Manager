@@ -1,7 +1,6 @@
 import java.util.*;
 import java.sql.Date;
 import java.time.LocalDate;
-import java.util.Iterator;
 
 import javax.swing.event.InternalFrameEvent;
 
@@ -41,6 +40,8 @@ public class Warehouse {
 
         if (item.isPerishable())
             itemsByExpiration.put(nextInstanceID, item.getExpr());
+        stockedIDs.get(sku).changeStock(item.getStock());
+
         nextInstanceID++;
         return nextInstanceID-1;
     }
@@ -63,15 +64,19 @@ public class Warehouse {
         }
         itemsByExpiration.remove(instanceID);
         itemsByChrono.set(instanceID,null);
+        stockedIDs.get(sku).changeStock(-1*item.getStock());
         return item;
     }
 
     public Item removeItemQuantity(int instanceID, int amount) {
         Item item = itemsByChrono.get(instanceID);
-        if(amount > item.getStock())
+        if(amount == item.getStock())
+            return removeItemInstance(instanceID);
+        else if(amount > item.getStock())
             return null;
         Item copy = new Item(item.getSKU(),amount,item.getAcquired());
         item.removeItem(amount);
+        
         return copy;
     }
 
@@ -218,12 +223,20 @@ public class Warehouse {
     }
 
     /* =========================
-       TRANSFER
+       TRANSACTIONS
        ========================= */
     //NEEDS TO MAKE A TRANSACTION
 
     public void addTransaction(Transaction transaction){
         transactions.add(transaction);
+    }
+
+    public List<Item> sellSKU(int sku, int amount){
+
+        return removeSKUQuantity(sku, amount);
+    }
+    public Item sellInstance(int instanceID, int amount){
+        return removeItemQuantity(instanceID,amount);
     }
 
 

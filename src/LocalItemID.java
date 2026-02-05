@@ -1,10 +1,12 @@
 import java.lang.Math;
+import java.time.LocalDate;
 public class LocalItemID{
     private ItemID reference;
     private int stock;
-    private int demand;
+    private float demand;
     private int dailyPurchased;
     private float volatility;
+    private LocalDate lastAction;
 
     public LocalItemID(ItemID itemID, int stock, int demand){
         reference = itemID;
@@ -25,9 +27,13 @@ public class LocalItemID{
         return reference;
     }
 
-    public void addStock(int change){
+    public void changeStock(int change){
         stock += change;
     }
+    public void purchase(int purchased){
+        stock -= purchased;
+    }
+
     public int getStock(){
         return stock;
     }
@@ -43,6 +49,6 @@ public class LocalItemID{
     }
 
     public int predict(){
-        return demand - stock;
+        return Math.round(demand - stock);
     }
 }
