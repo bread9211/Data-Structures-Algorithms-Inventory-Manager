@@ -365,6 +365,9 @@ public class UserGUI {
         // Hook up Add Item button
         addItemButton.addActionListener(e -> openAddItemDialog());
         
+        // Hook up Sell Item button
+        sellItemButton.addActionListener(e -> openRemoveItemDialog());
+        
         // Hook up Sort By button
         sortButton.addActionListener(e -> openSortDialog());
         
@@ -389,6 +392,25 @@ public class UserGUI {
             if (dialog.isConfirmed()) {
                 loadWarehouseInventory(selectedWarehouse);
                 JOptionPane.showMessageDialog(frame, "Item added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            }
+        }
+    }
+    
+    private void openRemoveItemDialog() {
+        String selectedWarehouse = (String) warehouseSelector.getSelectedItem();
+        if (selectedWarehouse == null || selectedWarehouse.equals("Select a Warehouse...")) {
+            JOptionPane.showMessageDialog(frame, "Please select a warehouse first.", "No Warehouse Selected", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        Warehouse warehouse = warehouseMap.get(selectedWarehouse);
+        if (warehouse != null) {
+            RemoveItemDialog dialog = new RemoveItemDialog(frame, warehouse);
+            dialog.setVisible(true);
+            
+            if (dialog.isConfirmed()) {
+                loadWarehouseInventory(selectedWarehouse);
+                JOptionPane.showMessageDialog(frame, "Item removed/sold successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
             }
         }
     }
