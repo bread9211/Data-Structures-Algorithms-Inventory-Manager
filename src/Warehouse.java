@@ -1,8 +1,9 @@
 import java.util.*;
 import java.sql.Date;
 import java.time.LocalDate;
+import java.util.Iterator;
 
-import javax.swing.event.InternalFrameEvent;
+import javax.swing.event.Internal FrameEvent;
 
 public class Warehouse {
 
@@ -40,7 +41,7 @@ public class Warehouse {
 
         if (item.isPerishable())
             itemsByExpiration.put(nextInstanceID, item.getExpr());
-        stockedIDs.get(sku).changeStock(item.getStock());
+        stockedIDs.get(sku).addStock(item.getStock());
 
         nextInstanceID++;
         return nextInstanceID-1;
@@ -64,7 +65,7 @@ public class Warehouse {
         }
         itemsByExpiration.remove(instanceID);
         itemsByChrono.set(instanceID,null);
-        stockedIDs.get(sku).changeStock(-1*item.getStock());
+        stockedIDs.get(sku).addStock(-1*item.getStock());
         return item;
     }
 
