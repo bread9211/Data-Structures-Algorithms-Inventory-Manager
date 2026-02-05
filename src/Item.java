@@ -2,7 +2,7 @@ import java.sql.Date;
 
 public class Item {
     private int SKU;
-    protected int amount;
+    private int amount;
     private Date acquiredDate;
     
     public Item(int ID, int num, Date date){

@@ -21,14 +21,15 @@ public class LocalItemID{
         volatility = 1;
     }
 
-    public void addStock(int change){
-        stock += change;
-    }
     public ItemID getReference(){
         return reference;
     }
 
-    //Changes the daily demand based on how many were purchased in a day
+
+    public void addStock(int change){
+        stock += change;
+    }
+
     public int purchase(int purchased){
         if(stock - purchased > 0){
             stock -= purchased;
@@ -50,7 +51,6 @@ public class LocalItemID{
         dailyPurchased = 0;
     }
 
-    //Calculates amount of stock to buy to maintain enough for deliveryTime days of customers
     public int predict(){
         return demand - stock;
     }

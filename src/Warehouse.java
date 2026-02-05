@@ -163,7 +163,8 @@ public class Warehouse {
     public List<Item> sortByName() {
         List<Item> list = new ArrayList<>(itemsByChrono);
         list.sort((a, b) ->
-            stockedIDs.get(a.getSKU()).getReference().getName().compareToIgnoreCase(stockedIDs.get(b.getSKU()).getReference().getName()));
+            stockedIDs.get(a.getSKU()).getReference().getName().compareToIgnoreCase(
+            stockedIDs.get(b.getSKU()).getReference().getName()));
         return list;
     }
 
@@ -190,6 +191,7 @@ public class Warehouse {
        TRANSFER
        ========================= */
     //NEEDS TO MAKE A TRANSACTION
+
     public void addTransaction(Transaction transaction){
         transactions.add(transaction);
     }
