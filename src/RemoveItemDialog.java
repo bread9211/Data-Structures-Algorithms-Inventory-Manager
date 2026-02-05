@@ -26,7 +26,7 @@ public class RemoveItemDialog extends JDialog {
     public RemoveItemDialog(JFrame parent, Warehouse warehouse) {
         super(parent, "Remove/Sell Item", true);
         this.warehouse = warehouse;
-        setSize(500, 450);
+        setSize(500, 550);
         setLocationRelativeTo(parent);
         setResizable(false);
         
@@ -45,7 +45,7 @@ public class RemoveItemDialog extends JDialog {
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.weightx = 0.3;
-        mainPanel.add(new JLabel("Item ID (SKU):"), gbc);
+        mainPanel.add(new JLabel("Search item:"), gbc);
         
         gbc.gridx = 1;
         gbc.weightx = 0.7;
@@ -85,7 +85,7 @@ public class RemoveItemDialog extends JDialog {
         gbc.gridy = 1;
         gbc.gridwidth = 2;
         gbc.weightx = 1.0;
-        gbc.weighty = 0.3;
+        gbc.weighty = 0.6;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.insets = new Insets(0, 10, 10, 10);
         

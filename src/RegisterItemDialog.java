@@ -145,6 +145,10 @@ public class RegisterItemDialog extends JDialog {
                 LocalItemID localItemID = new LocalItemID(newItemID, 0);
                 stockedIDs.put(itemID, localItemID);
                 
+                // Also add an Item instance to the warehouse's itemsByID map so it can be found in search
+                Item newItem = new Item(itemID, 1, null);  // Create with stock of 1
+                warehouse.addItem(newItem, newItemID);
+                
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error registering item: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 return;

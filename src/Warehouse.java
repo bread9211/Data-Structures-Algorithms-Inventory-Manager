@@ -158,6 +158,14 @@ public class Warehouse {
         return result;
     }
 
+    public ItemID getItemIDBySkU(int sku) {
+        LocalItemID localItemID = stockedIDs.get(sku);
+        if (localItemID != null) {
+            return localItemID.getReference();
+        }
+        return null;
+    }
+
     public List<Item> searchByKeyword(String keyword) {
         List<Item> result = new ArrayList<>();
         for (int sku : stockedIDs.keySet()){

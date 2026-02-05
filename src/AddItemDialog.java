@@ -1,6 +1,8 @@
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.util.List;
 
@@ -11,6 +13,11 @@ public class AddItemDialog extends JDialog {
     private JButton addButton;
     private JButton cancelButton;
     
+    private DefaultListModel<String> searchResultsModel;
+    private JList<String> searchResultsList;
+    private int selectedSKU = -1;
+    private javax.swing.Timer searchTimer;
+    
     private boolean confirmed = false;
     private Warehouse warehouse;
     private WarehouseManager warehouseManager;
@@ -19,7 +26,7 @@ public class AddItemDialog extends JDialog {
         super(parent, "Add Item to Warehouse", true);
         this.warehouse = warehouse;
         this.warehouseManager = warehouseManager;
-        setSize(500, 300);
+        setSize(500, 500);
         setLocationRelativeTo(parent);
         setResizable(false);
         
@@ -38,7 +45,7 @@ public class AddItemDialog extends JDialog {
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.weightx = 0.3;
-        mainPanel.add(new JLabel("Item ID:"), gbc);
+        mainPanel.add(new JLabel("Search item: "), gbc);
         
         gbc.gridx = 1;
         gbc.weightx = 0.7;
@@ -46,24 +53,89 @@ public class AddItemDialog extends JDialog {
         itemIDField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                updateItemName();
+                scheduleSearch();
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                updateItemName();
+                scheduleSearch();
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-                updateItemName();
+                scheduleSearch();
             }
         });
         mainPanel.add(itemIDField, gbc);
         
-        // Item Name Label (display only)
+        // Search Results List
         gbc.gridx = 0;
         gbc.gridy = 1;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0.6;
+        gbc.fill = GridBagConstraints.BOTH;
+        searchResultsModel = new DefaultListModel<>();
+        searchResultsList = new JList<>(searchResultsModel);
+        searchResultsList.addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                if (!e.getValueIsAdjusting()) {
+                    String selected = searchResultsList.getSelectedValue();
+                    if (selected != null) {
+                        // Check if this is the "Create New Item" option
+                        if (selected.startsWith(">>> Create New Item")) {
+                            // Auto-generate unique SKU and open register dialog
+                            int newSKU = generateUniqueSKU();
+                            openRegisterItemDialog(newSKU);
+                            searchResultsModel.clear();
+                            searchResultsList.clearSelection();
+                        } else {
+                            // Extract SKU from selected result (format: "SKU - Name")
+                            int dashIndex = selected.indexOf(" - ");
+                            if (dashIndex > 0) {
+                                try {
+                                    int sku = Integer.parseInt(selected.substring(0, dashIndex));
+                                    itemIDField.setText(String.valueOf(sku));
+                                } catch (NumberFormatException ex) {
+                                    // Ignore
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Add double-click listener for opening register dialog
+        searchResultsList.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                if (evt.getClickCount() == 2) {
+                    String selected = searchResultsList.getSelectedValue();
+                    if (selected != null && selected.startsWith(">>> Create New Item")) {
+                        // Auto-generate unique SKU and open register dialog
+                        int newSKU = generateUniqueSKU();
+                        openRegisterItemDialog(newSKU);
+                        searchResultsModel.clear();
+                        searchResultsList.clearSelection();
+                    }
+                }
+            }
+        });
+        
+        JScrollPane scrollPane = new JScrollPane(searchResultsList);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Search Results"));
+        mainPanel.add(scrollPane, gbc);
+        
+        // Reset layout constraints
+        gbc.gridwidth = 1;
+        gbc.weighty = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        // Item Name Label (display only)
+        gbc.gridx = 0;
+        gbc.gridy = 2;
         gbc.weightx = 0.3;
         mainPanel.add(new JLabel("Item Name:"), gbc);
         
@@ -75,7 +147,7 @@ public class AddItemDialog extends JDialog {
         
         // Quantity Label and Field
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         gbc.weightx = 0.3;
         mainPanel.add(new JLabel("Quantity:"), gbc);
         
@@ -97,40 +169,164 @@ public class AddItemDialog extends JDialog {
         buttonPanel.add(cancelButton);
         
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.EAST;
         mainPanel.add(buttonPanel, gbc);
         
         add(mainPanel);
+        
+        // Initialize search timer with 200ms debounce
+        searchTimer = new javax.swing.Timer(200, e -> performSearch());
+        searchTimer.setRepeats(false);
     }
     
-    private void updateItemName() {
+    private void scheduleSearch() {
+        searchTimer.restart();
+    }
+        private java.util.Collection<Warehouse> getAllWarehouses() {
         try {
-            String idText = itemIDField.getText().trim();
-            if (idText.isEmpty()) {
-                itemNameLabel.setText("Unknown");
-                itemNameLabel.setForeground(new Color(100, 100, 100));
-                return;
+            java.lang.reflect.Field field = WarehouseManager.class.getDeclaredField("warehouses");
+            field.setAccessible(true);
+            java.util.Map<String, Warehouse> warehousesMap = (java.util.Map<String, Warehouse>) field.get(warehouseManager);
+            return warehousesMap.values();
+        } catch (Exception e) {
+            // Fallback: return just the current warehouse
+            return java.util.Collections.singleton(warehouse);
+        }
+    }
+        private void performSearch() {
+        String input = itemIDField.getText().trim();
+        searchResultsModel.clear();
+        
+        if (input.isEmpty()) {
+            return;
+        }
+        
+        String lowerInput = input.toLowerCase();
+        java.util.Set<Integer> foundSKUs = new java.util.LinkedHashSet<>();
+        
+        // Search across all warehouses
+        java.util.Collection<Warehouse> allWarehouses = getAllWarehouses();
+        
+        // Tier 1: Search by item name in all warehouses
+        for (Warehouse w : allWarehouses) {
+            java.util.Map<Integer, java.util.List<Item>> itemsByID = w.getItemsByID();
+            for (int sku : itemsByID.keySet()) {
+                String itemName = w.getItemName(sku);
+                if (itemName != null && itemName.toLowerCase().contains(lowerInput)) {
+                    foundSKUs.add(sku);
+                }
             }
+        }
+        
+        // Tier 2: Search by SKU (number match) in all warehouses
+        for (Warehouse w : allWarehouses) {
+            java.util.Map<Integer, java.util.List<Item>> itemsByID = w.getItemsByID();
+            for (int sku : itemsByID.keySet()) {
+                String skuStr = String.valueOf(sku);
+                if (skuStr.contains(input)) {
+                    foundSKUs.add(sku);
+                }
+            }
+        }
+        
+        // Add all found results to the list
+        for (int sku : foundSKUs) {
+            // Get the item name from the first warehouse that has it
+            String itemName = "Unknown";
+            for (Warehouse w : allWarehouses) {
+                if (w.getItemsByID().containsKey(sku)) {
+                    itemName = w.getItemName(sku);
+                    break;
+                }
+            }
+            searchResultsModel.addElement(sku + " - " + itemName);
+        }
+        
+        // Update item info if only one result
+        if (searchResultsModel.size() == 1) {
+            updateItemInfo();
+        } else if (searchResultsModel.size() == 0) {
+            itemNameLabel.setText("No items found - select option to create new");
+            selectedSKU = -1;
+            // Add option to create new item
+            searchResultsModel.addElement(">>> Create New Item ID: " + input);
+        }
+    }
+    
+    private void updateItemInfo() {
+        String input = itemIDField.getText().trim();
+        
+        try {
+            int sku = Integer.parseInt(input);
+            selectedSKU = sku;
             
-            int itemID = Integer.parseInt(idText);
+            // Search for this SKU across all warehouses
+            java.util.Collection<Warehouse> allWarehouses = getAllWarehouses();
+            String itemName = null;
+            int totalStock = 0;
             
-            // Search all warehouses for this item ID
-            if (warehouseManager != null) {
-                List<Item> items = warehouse.searchByID(itemID);
-                if (!items.isEmpty()) {
-                    itemNameLabel.setText("Item ID " + itemID + " (found in warehouse)");
-                    itemNameLabel.setForeground(new Color(0, 100, 0));
-                    return;
+            for (Warehouse w : allWarehouses) {
+                java.util.Map<Integer, java.util.List<Item>> itemsByID = w.getItemsByID();
+                if (itemsByID.containsKey(sku)) {
+                    if (itemName == null) {
+                        itemName = w.getItemName(sku);
+                    }
+                    java.util.List<Item> items = itemsByID.get(sku);
+                    for (Item item : items) {
+                        totalStock += item.getStock();
+                    }
                 }
             }
             
-            itemNameLabel.setText("Unknown Item ID");
-            itemNameLabel.setForeground(new Color(200, 100, 100));
-        } catch (NumberFormatException ex) {
+            if (itemName != null) {
+                itemNameLabel.setText(itemName + " (Stock: " + totalStock + ")");
+                itemNameLabel.setForeground(new Color(0, 100, 0));
+            } else {
+                itemNameLabel.setText("Item not found");
+                selectedSKU = -1;
+            }
+        } catch (NumberFormatException e) {
             itemNameLabel.setText("Invalid ID");
             itemNameLabel.setForeground(new Color(200, 100, 100));
+            selectedSKU = -1;
+        }
+    }
+    
+    private int generateUniqueSKU() {
+        int maxSKU = -1;
+        
+        // Search all warehouses to find the highest existing SKU
+        java.util.Collection<Warehouse> allWarehouses = getAllWarehouses();
+        for (Warehouse w : allWarehouses) {
+            java.util.Map<Integer, java.util.List<Item>> itemsByID = w.getItemsByID();
+            for (int sku : itemsByID.keySet()) {
+                if (sku > maxSKU) {
+                    maxSKU = sku;
+                }
+            }
+        }
+        
+        // Return the next unique SKU
+        return maxSKU + 1;
+    }
+    
+    private void openRegisterItemDialog(int itemID) {
+        RegisterItemDialog registerDialog = new RegisterItemDialog((JFrame) SwingUtilities.getWindowAncestor(this), itemID, warehouse);
+        registerDialog.setVisible(true);
+        
+        if (registerDialog.isConfirmed()) {
+            // Refresh warehouse reference to ensure we have the latest data
+            warehouse = warehouseManager.getCurrent();
+            
+            // Item was registered, now the user can add it
+            itemIDField.setText(String.valueOf(itemID));
+            selectedSKU = itemID;
+            
+            // Clear search results and directly update item info with the newly registered item
+            searchResultsModel.clear();
+            updateItemInfo();
         }
     }
     
@@ -149,9 +345,19 @@ public class AddItemDialog extends JDialog {
                 return;
             }
             
-            // Validate that item ID exists in any warehouse
-            List<Item> items = warehouse.searchByID(itemID);
-            if (items.isEmpty()) {
+            // Check if item ID exists in any warehouse
+            java.util.Collection<Warehouse> allWarehouses = getAllWarehouses();
+            boolean itemExists = false;
+            
+            for (Warehouse w : allWarehouses) {
+                java.util.Map<Integer, java.util.List<Item>> itemsByID = w.getItemsByID();
+                if (itemsByID.containsKey(itemID)) {
+                    itemExists = true;
+                    break;
+                }
+            }
+            
+            if (!itemExists) {
                 // Item ID doesn't exist - prompt user to register new item
                 int response = JOptionPane.showConfirmDialog(
                     this,
@@ -168,8 +374,9 @@ public class AddItemDialog extends JDialog {
                     
                     if (registerDialog.isConfirmed()) {
                         // Item was registered, now add it to warehouse
+                        ItemID itemIDObj = warehouse.getItemIDBySkU(itemID);
                         Item newItem = new Item(itemID, quantity, null);
-                        warehouse.addItem(newItem, itemID);
+                        warehouse.addItem(newItem, itemIDObj);
                         
                         confirmed = true;
                         dispose();
@@ -179,8 +386,9 @@ public class AddItemDialog extends JDialog {
             }
             
             // Add item to warehouse directly
+            ItemID itemIDObj = warehouse.getItemIDBySkU(itemID);
             Item newItem = new Item(itemID, quantity, null);
-            warehouse.addItem(newItem, itemID);
+            warehouse.addItem(newItem, itemIDObj);
             
             confirmed = true;
             dispose();
