@@ -48,12 +48,18 @@ public class WarehouseManager {
         if(!warehouses.containsKey(other))
             return;
         Set<Item> curItems = new HashSet<>();
-        for(int id : currentInstances)
-            curItems.add(current.removeItemInstance(id));
+        Item item;
+        for(int id : currentInstances){
+            item = current.removeItemInstance(id);
+            curItems.add(item);
+            warehouses.get(other).addItem(item, stockedIDs.get(item.getSKU()));
+        }
         Set<Item> othItems = new HashSet<>();
-        for(int id : otherInstances)
-            othItems.add(warehouses.get(other).removeItemInstance(id));
-
+        for(int id : otherInstances){
+            item = warehouses.get(other).removeItemInstance(id);
+            othItems.add(item);
+            current.addItem(item, stockedIDs.get(item.getSKU()));
+        }
         Transaction trade = new Trade(current,warehouses.get(other),curItems,othItems);
         current.addTransaction(trade);
         warehouses.get(other).addTransaction(trade);
