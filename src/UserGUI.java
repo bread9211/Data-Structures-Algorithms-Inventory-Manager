@@ -357,11 +357,13 @@ public class UserGUI {
         sellItemButton = new JButton("Sell Item");
         transferItemButton = new JButton("Transfer Item");
         sortButton = new JButton("Sort By");
+        JButton exportButton = new JButton("Export");
         
         buttonPanel.add(addItemButton);
         buttonPanel.add(sellItemButton);
         buttonPanel.add(transferItemButton);
         buttonPanel.add(sortButton);
+        buttonPanel.add(exportButton);
         
         // Hook up Add Item button
         addItemButton.addActionListener(e -> openAddItemDialog());
@@ -374,6 +376,9 @@ public class UserGUI {
         
         // Hook up Sort By button
         sortButton.addActionListener(e -> openSortDialog());
+        
+        // Hook up Export button
+        exportButton.addActionListener(e -> openExportDialog());
         
         actionPanel.add(searchPanel, BorderLayout.NORTH);
         actionPanel.add(buttonPanel, BorderLayout.CENTER);
@@ -591,6 +596,41 @@ public class UserGUI {
     
     public void addSortListener(ActionListener listener) {
         sortButton.addActionListener(listener);
+    }
+    
+    private void openExportDialog() {
+        ExportDialog exportDialog = new ExportDialog(frame, warehouseManager);
+        exportDialog.setVisible(true);
+        
+        if (exportDialog.isConfirmed()) {
+            java.util.List<String> selectedWarehouses = exportDialog.getSelectedWarehouses();
+            
+            // Show file chooser to select save location
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Save Export File");
+            fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("CSV Files", "csv"));
+            fileChooser.setSelectedFile(new java.io.File("warehouse_export.csv"));
+            
+            int result = fileChooser.showSaveDialog(frame);
+            
+            if (result == JFileChooser.APPROVE_OPTION) {
+                java.io.File selectedFile = fileChooser.getSelectedFile();
+                String filePath = selectedFile.getAbsolutePath();
+                
+                // Ensure .csv extension
+                if (!filePath.endsWith(".csv")) {
+                    filePath += ".csv";
+                }
+                
+                try {
+                    ExportUtil.exportWarehousesToCSV(filePath, selectedWarehouses, warehouseManager);
+                    JOptionPane.showMessageDialog(frame, "Export successful!\nFile saved to: " + filePath, "Export Complete", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(frame, "Error during export: " + e.getMessage(), "Export Failed", JOptionPane.ERROR_MESSAGE);
+                    e.printStackTrace();
+                }
+            }
+        }
     }
     
     // Method to refresh the inventory display with all warehouses

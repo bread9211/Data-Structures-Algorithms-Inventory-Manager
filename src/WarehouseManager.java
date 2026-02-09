@@ -107,6 +107,10 @@ public class WarehouseManager {
         return stockedIDs.get(SKU);
     }
 
+    public List<String> getAllWarehouseNames() {
+        return new ArrayList<>(warehouses.keySet());
+    }
+
     public void printAllWarehouses() {
         for (Warehouse w : warehouses.values()) {
             w.printInventory();
