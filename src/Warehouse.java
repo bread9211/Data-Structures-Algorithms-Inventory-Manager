@@ -251,9 +251,8 @@ public class Warehouse {
     public void addTransaction(Sell transaction){
         transactions.add(transaction);
         Item item = transaction.getItem();
-        stockedIDs.get(item.getSKU()).purchase(item.getStock());
+        stockedIDs.get(item.getSKU()).sell(item.getStock());
     }
-
 
 
     /* =========================

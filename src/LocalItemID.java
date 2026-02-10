@@ -3,21 +3,21 @@ public class LocalItemID{
     private ItemID reference;
     private int stock;
     private int demand;
-    private int dailyPurchased;
+    private int dailySold;
     private float volatility;
 
     public LocalItemID(ItemID itemID, int stock, int demand){
         reference = itemID;
         this.stock = stock;
         this.demand = demand;
-        dailyPurchased = 0;
+        dailySold = 0;
         volatility = 1;
     }
     public LocalItemID(ItemID itemID, int stock){
         reference = itemID;
         this.stock = stock;
         this.demand = stock;
-        dailyPurchased = 0;
+        dailySold = 0;
         volatility = 1;
     }
 
@@ -31,18 +31,18 @@ public class LocalItemID{
     public int getStock(){
         return stock;
     }
-    public void purchase(int purchased){
-        dailyPurchased += purchased;
+    public void sell(int sold){
+        dailySold += sold;
     }
 
     //Daily increment
     public void dateIncrement(){
-        volatility = (2*volatility + dailyPurchased/demand)/3;
+        volatility = (2*volatility + dailySold/demand)/3;
         if(demand == 0)
-            demand = dailyPurchased;
+            demand = dailySold;
         else
-            demand = Math.round(dailyPurchased*volatility);
-        dailyPurchased = 0;
+            demand = Math.round(dailySold*volatility);
+        dailySold = 0;
     }
 
     public int predict(){
