@@ -1,7 +1,6 @@
 import java.util.*;
 import java.sql.Date;
 import java.time.LocalDate;
-import java.util.Iterator;
 
 import javax.swing.event.InternalFrameEvent;
 
@@ -49,6 +48,7 @@ public class Warehouse {
             stockedIDs.get(sku).addStock(item.getStock());
         }
 
+
         if (item.isPerishable())
             itemsByExpiration.put(nextInstanceID, item.getExpr());
         nextInstanceID++;
@@ -58,7 +58,7 @@ public class Warehouse {
     public int addItem(Item item,ItemID itemID) {
         int sku = item.getSKU();
         if(!itemsBySKU.containsKey(sku))
-            stockedIDs.put(sku,new LocalItemID(itemID, item.getStock()));
+            stockedIDs.put(sku,new LocalItemID(itemID,0));
         return addItem(item,sku);
     }
 
@@ -68,8 +68,9 @@ public class Warehouse {
 
         int sku = item.getSKU();
         itemsBySKU.get(sku).remove(instanceID);
+        stockedIDs.get(sku).addStock(-1*item.getStock());
         if (itemsBySKU.get(sku).isEmpty()) {
-            itemsBySKU.remove(sku);
+            stockedIDs.remove(sku);
         }
         itemsByExpiration.remove(instanceID);
         itemsByChrono.set(instanceID,null);
@@ -82,6 +83,7 @@ public class Warehouse {
             return null;
         Item copy = new Item(item.getSKU(),amount,item.getAcquired());
         item.removeItem(amount);
+        stockedIDs.get(item.getSKU()).addStock(-1*amount);
         return copy;
     }
 
@@ -108,6 +110,7 @@ public class Warehouse {
                 returnItems.add(removeItemInstance(item.getID()));
             }
         }
+        itemID.addStock(-1*amount);
         return returnItems;
     }
 
@@ -239,8 +242,16 @@ public class Warehouse {
        ========================= */
     //NEEDS TO MAKE A TRANSACTION
 
-    public void addTransaction(Transaction transaction){
+    public void addTransaction(Trade transaction){
         transactions.add(transaction);
+    }
+    public void addTransaction(Purchase transaction){
+        transactions.add(transaction);
+    }
+    public void addTransaction(Sell transaction){
+        transactions.add(transaction);
+        Item item = transaction.getItem();
+        stockedIDs.get(item.getSKU()).purchase(item.getStock());
     }
 
 

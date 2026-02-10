@@ -83,7 +83,7 @@ public class WarehouseManager {
             }
         }
         
-        Transaction trade = new Trade(current, otherWarehouse, curItems, othItems);
+        Trade trade = new Trade(current, otherWarehouse, curItems, othItems);
         current.addTransaction(trade);
         otherWarehouse.addTransaction(trade);
     }

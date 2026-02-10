@@ -31,10 +31,13 @@ public class LocalItemID{
     public int getStock(){
         return stock;
     }
+    public void purchase(int purchased){
+        dailyPurchased += purchased;
+    }
 
     //Daily increment
     public void dateIncrement(){
-        volatility = dailyPurchased/demand;
+        volatility = (2*volatility + dailyPurchased/demand)/3;
         if(demand == 0)
             demand = dailyPurchased;
         else
