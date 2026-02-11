@@ -493,12 +493,12 @@ public class DemoTester {
     private static void addItem(WarehouseManager manager, Warehouse warehouse, String name, int sku,
                                 int price, int cost, String[] keywords, int stock, String expr) {
         ItemID itemID = new ItemID(name, sku, price, cost, keywords);
-        warehouse.addItem(new Item(sku, stock, null), itemID);
+        warehouse.addItem(new Item(sku, stock), itemID);
     }
     
     private static void addPerishableItem(WarehouseManager manager, Warehouse warehouse, String name, int sku,
                                          int price, int cost, int quantity, String[] keywords, String exprDate) {
         ItemID itemID = new ItemID(name, sku, price, cost, keywords);
-        warehouse.addItem(new PerishableItem(sku, quantity, null, LocalDate.parse(exprDate)), itemID);
+        warehouse.addItem(new PerishableItem(sku, quantity, LocalDate.parse(exprDate)), itemID);
     }
 }

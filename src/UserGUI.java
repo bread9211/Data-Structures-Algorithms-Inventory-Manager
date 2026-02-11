@@ -118,16 +118,10 @@ public class UserGUI {
                 
                 for (Map.Entry<Integer, java.util.List<Item>> entry : itemsByID.entrySet()) {
                     int totalStock = 0;
-                    LocalDate lastAcquired = null;
                     LocalDate earliestExpiration = null;
-                    boolean hasPerishable = false;
                     
                     for (Item item : entry.getValue()) {
                         totalStock += item.getStock();
-                        if (lastAcquired == null || item.getAcquired().isAfter(lastAcquired)) {
-                            lastAcquired = item.getAcquired();
-                        }
-                        
                         if (item.isPerishable()) {
                             PerishableItem perishable = (PerishableItem) item;
                             LocalDate exprDate = perishable.getExpr();
@@ -135,7 +129,6 @@ public class UserGUI {
                                 if (earliestExpiration == null || exprDate.isBefore(earliestExpiration)) {
                                     earliestExpiration = exprDate;
                                 }
-                                hasPerishable = true;
                             }
                         }
                     }
