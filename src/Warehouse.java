@@ -9,7 +9,7 @@ public class Warehouse {
     private String name;
     private Map<Integer, Set<Integer>> itemsBySKU;
     private Map<Integer,LocalItemID> stockedIDs;
-    private Map<Integer, LocalDate> itemsByExpiration;
+    private Map<LocalDate, Set<Integer>> itemsByExpiration;
     private List<Item> itemsByChrono;
     private List<Transaction> transactions;
     private int nextInstanceID;
@@ -18,7 +18,7 @@ public class Warehouse {
         this.name = name;
         itemsBySKU = new HashMap<>();
         stockedIDs = new HashMap<>();
-      itemsByExpiration = new HashMap<>();
+        itemsByExpiration = new TreeMap<>();
         itemsByChrono = new ArrayList<>();
         transactions = new ArrayList<>();
         nextInstanceID = 0;
@@ -48,11 +48,17 @@ public class Warehouse {
             stockedIDs.get(sku).addStock(item.getStock());
         }
 
-
-        if (item.isPerishable())
-            itemsByExpiration.put(nextInstanceID, item.getExpr());
+        if (item.isPerishable()){
+            if(!itemsByExpiration.containsKey(item.getExpr()))
+                itemsByExpiration.put(item.getExpr(), new HashSet<Integer>());
+            itemsByExpiration.get(item.getExpr()).add(nextInstanceID);
+        }
         nextInstanceID++;
         return nextInstanceID-1;
+    }
+
+    public Item getItem(int instanceID){
+        return itemsByChrono.get(instanceID);
     }
 
     public int addItem(Item item,ItemID itemID) {
@@ -71,8 +77,13 @@ public class Warehouse {
         stockedIDs.get(sku).addStock(-1*item.getStock());
         if (itemsBySKU.get(sku).isEmpty()) {
             stockedIDs.remove(sku);
+            itemsBySKU.remove(sku);
         }
-        itemsByExpiration.remove(instanceID);
+
+        if(item.isPerishable())
+            itemsByExpiration.get(item.getExpr()).remove(instanceID);
+            if(itemsByExpiration.get(item.getExpr()).isEmpty())
+                itemsByExpiration.remove(item.getExpr());
         itemsByChrono.set(instanceID,null);
         return item;
     }
@@ -81,6 +92,8 @@ public class Warehouse {
         Item item = itemsByChrono.get(instanceID);
         if(amount > item.getStock())
             return null;
+        else if(amount == item.getStock())
+            return removeItemInstance(instanceID);
         Item copy = new Item(item.getSKU(),amount,item.getAcquired());
         item.removeItem(amount);
         stockedIDs.get(item.getSKU()).addStock(-1*amount);
@@ -103,9 +116,7 @@ public class Warehouse {
             if(stock > amount){
                 returnItems.add(removeItemQuantity(item.getID(),amount));
                 amount = 0;
-            }else if(stock < 0)
-                    removeItemInstance(item.getID());
-            else{
+            }else{
                 amount -= stock;
                 returnItems.add(removeItemInstance(item.getID()));
             }
@@ -123,6 +134,10 @@ public class Warehouse {
             return true;
         }
         return false;
+    }
+
+    public List<Item> clearExpr(){
+        return null;
     }
 
     /* =========================
@@ -226,13 +241,12 @@ public class Warehouse {
     }
 
     public List<Item> sortByExpiration() {
-        List<Integer> ids = new ArrayList<>(itemsByExpiration.keySet());
-        ids.sort((a, b) ->
-            itemsByExpiration.get(a).compareTo(itemsByExpiration.get(b)));
-
         List<Item> result = new ArrayList<>();
-        for (int id : ids) {
-            result.add(itemsByChrono.get(id));
+        Set<LocalDate> dates = itemsByExpiration.keySet();
+        for (LocalDate date : dates){
+            Set<Integer> ids = itemsByExpiration.get(date);
+            for(int id: ids)
+                result.add(itemsByChrono.get(id));
         }
         return result;
     }
