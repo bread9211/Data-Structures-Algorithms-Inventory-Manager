@@ -22,6 +22,10 @@ public class ItemID {
     public String getName(){
         return itemName;
     }
+    public String[] getKeywords(){
+        return keywords;
+    }
+
     public int getBuyPrice(){
         return buyPrice;
     }

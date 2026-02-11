@@ -1,8 +1,6 @@
 import java.util.*;
-import java.sql.Date;
 import java.time.LocalDate;
 
-import javax.swing.event.InternalFrameEvent;
 
 public class Warehouse {
 
@@ -40,13 +38,10 @@ public class Warehouse {
         itemsBySKU.putIfAbsent(sku, new HashSet<>());
         itemsBySKU.get(sku).add(nextInstanceID);
 
-        // Ensure stockedIDs is updated even when using the int sku version
         if (!stockedIDs.containsKey(sku)) {
-            // Create a default ItemID reference for tracking
             ItemID defaultItem = new ItemID("Item " + sku, sku, 0, 0, new String[]{});
             stockedIDs.put(sku, new LocalItemID(defaultItem, item.getStock()));
         } else {
-            // Update the stock count in the existing entry
             stockedIDs.get(sku).addStock(item.getStock());
         }
 
@@ -213,7 +208,7 @@ public class Warehouse {
         if (stockedIDs.containsKey(sku)) {
             return stockedIDs.get(sku).getReference().getName();
         }
-        return "Item " + sku;  // Fallback if name not found
+        return "Item " + sku;
     }
 
     public ItemID getItemIDForSKU(int sku) {
@@ -225,15 +220,7 @@ public class Warehouse {
 
     public String[] getItemKeywords(int sku) {
         if (stockedIDs.containsKey(sku)) {
-            ItemID itemID = stockedIDs.get(sku).getReference();
-            // Use reflection to access keywords since they're private
-            try {
-                java.lang.reflect.Field field = ItemID.class.getDeclaredField("keywords");
-                field.setAccessible(true);
-                return (String[]) field.get(itemID);
-            } catch (Exception e) {
-                return new String[]{};
-            }
+            return stockedIDs.get(sku).getReference().getKeywords();
         }
         return new String[]{};
     }
