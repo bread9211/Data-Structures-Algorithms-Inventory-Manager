@@ -266,9 +266,8 @@ public class Warehouse {
     }
 
     /* =========================
-       TRANSFER
+       TRANSACTIONS
        ========================= */
-    //NEEDS TO MAKE A TRANSACTION
 
     public void addTransaction(Trade transaction){
         transactions.add(transaction);
@@ -280,6 +279,9 @@ public class Warehouse {
         transactions.add(transaction);
         Item item = transaction.getItem();
         stockedIDs.get(item.getSKU()).sell(item.getStock());
+    }
+    public List<Transaction> getTransactions(){
+        return transactions;
     }
 
 
