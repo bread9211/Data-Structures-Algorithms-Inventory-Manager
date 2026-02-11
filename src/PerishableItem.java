@@ -7,7 +7,7 @@ public class PerishableItem extends Item{
         super(SKU,num);
         this.exprDate = exprDate;
     }
-    public PerishableItem(int num, LocalDate pDate, LocalDate eDate){
+    public PerishableItem(int num, LocalDate eDate){
         super(num);
         exprDate = eDate;
     }
