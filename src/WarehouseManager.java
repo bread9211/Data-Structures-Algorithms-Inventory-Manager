@@ -136,6 +136,59 @@ public class WarehouseManager {
     public List<String> getAllWarehouseNames() {
         return new ArrayList<>(warehouses.keySet());
     }
+    
+    /**
+     * Find a SKU across all warehouses
+     * @param sku The SKU to search for
+     * @return The warehouse containing the SKU, or null if not found
+     */
+    public Warehouse findWarehouseBySKU(int sku) {
+        for (Warehouse w : warehouses.values()) {
+            if (w.getItemIDForSKU(sku) != null) {
+                return w;
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Get all unique SKUs across all warehouses
+     * @return Set of all SKUs in the system
+     */
+    public Set<Integer> getAllSKUs() {
+        Set<Integer> allSkus = new HashSet<>();
+        for (Warehouse w : warehouses.values()) {
+            Map<Integer, List<Item>> itemsByID = w.getItemsByID();
+            allSkus.addAll(itemsByID.keySet());
+        }
+        return allSkus;
+    }
+    
+    /**
+     * Get item name for a SKU from the first warehouse that has it
+     * @param sku The SKU
+     * @return The item name, or "Unknown" if not found
+     */
+    public String getItemNameForSKU(int sku) {
+        Warehouse w = findWarehouseBySKU(sku);
+        if (w != null) {
+            return w.getItemName(sku);
+        }
+        return "Unknown";
+    }
+    
+    /**
+     * Get ItemID metadata for a SKU from the first warehouse that has it
+     * @param sku The SKU
+     * @return The ItemID, or null if not found
+     */
+    public ItemID getItemIDForSKU(int sku) {
+        Warehouse w = findWarehouseBySKU(sku);
+        if (w != null) {
+            return w.getItemIDForSKU(sku);
+        }
+        return null;
+    }
 
     public void printAllWarehouses() {
         for (Warehouse w : warehouses.values()) {

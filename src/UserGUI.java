@@ -485,10 +485,11 @@ public class UserGUI {
         // Prepare lowercase search query for case-insensitive partial matching
         String lowerSearchQuery = searchQuery.toLowerCase();
         
-        // Search through all warehouses
-        for (Map.Entry<String, Warehouse> warehouseEntry : warehouseMap.entrySet()) {
-            String warehouseName = warehouseEntry.getKey();
-            Warehouse warehouse = warehouseEntry.getValue();
+        // Search through all warehouses using WarehouseManager
+        java.util.List<String> warehouseNames = warehouseManager.getAllWarehouseNames();
+        for (String warehouseName : warehouseNames) {
+            Warehouse warehouse = warehouseMap.get(warehouseName);
+            if (warehouse == null) continue;
             
             try {
                 java.util.List<Item> results = new java.util.ArrayList<>();
