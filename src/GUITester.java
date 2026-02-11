@@ -28,11 +28,11 @@ public class GUITester {
         ItemID lettuce = new ItemID("Lettuce", 1004, 100, 50, new String[]{"vegetable", "produce"});
         ItemID tomato = new ItemID("Tomato", 1005, 120, 70, new String[]{"vegetable", "produce"});
         
-        warehouseA.addItem(new PerishableItem(1001, 150, null, java.time.LocalDate.parse("2026-02-14")), banana);
-        warehouseA.addItem(new PerishableItem(1002, 200, null, java.time.LocalDate.parse("2026-02-20")), apple);
-        warehouseA.addItem(new PerishableItem(1003, 75, null, java.time.LocalDate.parse("2026-02-18")), orange);
-        warehouseA.addItem(new PerishableItem(1004, 100, null, java.time.LocalDate.parse("2026-02-08")), lettuce);
-        warehouseA.addItem(new PerishableItem(1005, 50, null, java.time.LocalDate.parse("2026-02-15")), tomato);
+        warehouseA.addItem(new PerishableItem(1001, 150, java.time.LocalDate.parse("2026-02-14")), banana);
+        warehouseA.addItem(new PerishableItem(1002, 200, java.time.LocalDate.parse("2026-02-20")), apple);
+        warehouseA.addItem(new PerishableItem(1003, 70, java.time.LocalDate.parse("2026-02-18")), orange);
+        warehouseA.addItem(new PerishableItem(1004, 100, java.time.LocalDate.parse("2026-02-08")), lettuce);
+        warehouseA.addItem(new PerishableItem(1005, 50, java.time.LocalDate.parse("2026-02-15")), tomato);
         
         // Warehouse B - Hardware
         ItemID m3Screw = new ItemID("M3 Screw", 2001, 50, 30, new String[]{"hardware", "fastener"});
@@ -40,10 +40,10 @@ public class GUITester {
         ItemID washer = new ItemID("Washer", 2003, 80, 40, new String[]{"hardware", "fastener"});
         ItemID nail = new ItemID("Nail 2in", 2004, 120, 60, new String[]{"hardware", "fastener"});
         
-        warehouseB.addItem(new Item(2001, 500, null), m3Screw);
-        warehouseB.addItem(new Item(2002, 300, null), bolt);
-        warehouseB.addItem(new Item(2003, 800, null), washer);
-        warehouseB.addItem(new Item(2004, 1200, null), nail);
+        warehouseB.addItem(new Item(2001, 500), m3Screw);
+        warehouseB.addItem(new Item(2002, 300), bolt);
+        warehouseB.addItem(new Item(2003, 800), washer);
+        warehouseB.addItem(new Item(2004, 1200), nail);
         
         // Warehouse C - Office Supplies & Mixed
         ItemID notebook = new ItemID("Notebook", 3001, 100, 60, new String[]{"office", "stationery"});
@@ -52,11 +52,11 @@ public class GUITester {
         ItemID paperReam = new ItemID("Paper Ream A4", 3004, 200, 100, new String[]{"office", "paper"});
         ItemID coffee = new ItemID("Coffee Ground", 3005, 300, 150, new String[]{"beverage", "coffee"});
         
-        warehouseC.addItem(new Item(3001, 100, null), notebook);
-        warehouseC.addItem(new Item(3002, 60, null), pen);
-        warehouseC.addItem(new Item(3003, 200, null), pencil);
-        warehouseC.addItem(new Item(3004, 50, null), paperReam);
-        warehouseC.addItem(new PerishableItem(3005, 75, null, java.time.LocalDate.parse("2026-08-04")), coffee);
+        warehouseC.addItem(new Item(3001, 100), notebook);
+        warehouseC.addItem(new Item(3002, 60), pen);
+        warehouseC.addItem(new Item(3003, 200), pencil);
+        warehouseC.addItem(new Item(3004, 50), paperReam);
+        warehouseC.addItem(new PerishableItem(3005, 75, java.time.LocalDate.parse("2026-08-04")), coffee);
         
         // Refresh the inventory display to show all items
         gui.refreshInventory();

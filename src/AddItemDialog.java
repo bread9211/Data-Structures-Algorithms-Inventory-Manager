@@ -315,7 +315,7 @@ public class AddItemDialog extends JDialog {
                     
                     if (registerDialog.isConfirmed()) {
                         // Item was registered, now add it to warehouse
-                        Item newItem = new Item(itemID, quantity, null);
+                        Item newItem = new Item(itemID, quantity);
                         warehouse.addItem(newItem, itemID);
                         
                         confirmed = true;
@@ -326,7 +326,7 @@ public class AddItemDialog extends JDialog {
             }
             
             // Add item to warehouse directly
-            Item newItem = new Item(itemID, quantity, null);
+            Item newItem = new Item(itemID, quantity);
             if (existingItemID != null) {
                 // Use the existing ItemID from another warehouse
                 warehouse.addItem(newItem, existingItemID);

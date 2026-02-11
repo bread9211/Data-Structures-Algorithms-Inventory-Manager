@@ -3,12 +3,12 @@ import java.time.LocalDate;
 public class PerishableItem extends Item{
     private LocalDate exprDate;
     
-    public PerishableItem(int SKU, int num, LocalDate pDate, LocalDate eDate){
-        super(SKU,num,pDate);
-        exprDate = eDate;
+    public PerishableItem(int SKU, int num, LocalDate exprDate){
+        super(SKU,num);
+        exprDate = exprDate;
     }
     public PerishableItem(int num, LocalDate pDate, LocalDate eDate){
-        super(num,pDate);
+        super(num);
         exprDate = eDate;
     }
     

@@ -94,7 +94,7 @@ public class Warehouse {
             return null;
         else if(amount == item.getStock())
             return removeItemInstance(instanceID);
-        Item copy = new Item(item.getSKU(),amount,item.getAcquired());
+        Item copy = new Item(item.getSKU(),amount);
         item.removeItem(amount);
         stockedIDs.get(item.getSKU()).addStock(-1*amount);
         return copy;
