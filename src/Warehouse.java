@@ -137,7 +137,21 @@ public class Warehouse {
     }
 
     public List<Item> clearExpr(){
-        return null;
+        LocalDate date;
+        List<Item> result = new ArrayList<>();
+        Set<LocalDate> dates = itemsByExpiration.keySet();
+        Iterator<LocalDate> it = dates.iterator();
+        boolean passedDate = false;
+        while(it.hasNext() && !passedDate){
+            date = it.next();
+            if(date.isBefore(LocalDate.now())){
+                Set<Integer> ids = itemsByExpiration.get(date);
+                for(int id: ids)
+                result.add(removeItemInstance(id));
+            }else
+                passedDate = true;
+        }
+        return result;
     }
 
     /* =========================
