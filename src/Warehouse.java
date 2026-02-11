@@ -9,6 +9,7 @@ public class Warehouse {
     private String name;
     private Map<Integer, Set<Integer>> itemsBySKU;
     private Map<Integer,LocalItemID> stockedIDs;
+    private Map<String,Integer> skusByName;
     private Map<LocalDate, Set<Integer>> itemsByExpiration;
     private List<Item> itemsByChrono;
     private List<Transaction> transactions;
@@ -18,8 +19,9 @@ public class Warehouse {
         this.name = name;
         itemsBySKU = new HashMap<>();
         stockedIDs = new HashMap<>();
-        itemsByExpiration = new TreeMap<>();
+        itemsByExpiration = new HashMap<>();
         itemsByChrono = new ArrayList<>();
+        skusByName = new HashMap<>();
         transactions = new ArrayList<>();
         nextInstanceID = 0;
     }
@@ -63,8 +65,10 @@ public class Warehouse {
 
     public int addItem(Item item,ItemID itemID) {
         int sku = item.getSKU();
-        if(!itemsBySKU.containsKey(sku))
+        if(!itemsBySKU.containsKey(sku)){
             stockedIDs.put(sku,new LocalItemID(itemID,0));
+            skusByName.put(itemID.getName(),sku);
+        }
         return addItem(item,sku);
     }
 
@@ -240,23 +244,32 @@ public class Warehouse {
        ========================= */
 
     public List<Item> sortByName() {
-        List<Item> list = new ArrayList<>(itemsByChrono);
-        list.sort((a, b) ->
-            stockedIDs.get(a.getSKU()).getReference().getName().compareToIgnoreCase(
-            stockedIDs.get(b.getSKU()).getReference().getName()));
-        return list;
+        List<Item> result = new ArrayList<>(itemsByChrono);
+        Set<Integer> ids;
+        Set<String> names = new TreeSet<>(skusByName.keySet());
+        for (String name : names){
+            ids = itemsBySKU.get(skusByName.get(name));
+            for(int id: ids)
+                result.add(itemsByChrono.get(id));
+        }
+        return result;
     }
 
     public List<Item> sortBySKU() {
-        List<Item> list = new ArrayList<>(itemsByChrono);
-        list.sort((a, b) ->
-            Integer.compare(a.getSKU(), b.getSKU()));
-        return list;
+        List<Item> result = new ArrayList<>();
+        Set<Integer> skus = new TreeSet<>(itemsBySKU.keySet());
+        Set<Integer> ids;
+        for (int sku : skus){
+            ids = itemsBySKU.get(sku);
+            for(int id: ids)
+                result.add(itemsByChrono.get(id));
+        }
+        return result;
     }
 
     public List<Item> sortByExpiration() {
         List<Item> result = new ArrayList<>();
-        Set<LocalDate> dates = itemsByExpiration.keySet();
+        Set<LocalDate> dates = new TreeSet<>(itemsByExpiration.keySet());
         for (LocalDate date : dates){
             Set<Integer> ids = itemsByExpiration.get(date);
             for(int id: ids)
