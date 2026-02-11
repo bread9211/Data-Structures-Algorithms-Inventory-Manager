@@ -190,11 +190,10 @@ public class Warehouse {
 
     public List<Item> searchByName(String name) {
         List<Item> result = new ArrayList<>();
-        for (int sku : stockedIDs.keySet()){
-            if (stockedIDs.get(sku).getReference().getName().equals(name)) {
-                for(int id : itemsBySKU.get(sku))
-                    result.add(itemsByChrono.get(id));
-            }
+        if (!skusByName.containsKey(name)) return result;
+
+        for (int id : itemsBySKU.get(skusByName.get(name))) {
+            result.add(itemsByChrono.get(id));
         }
         return result;
     }
