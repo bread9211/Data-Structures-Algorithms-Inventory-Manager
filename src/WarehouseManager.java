@@ -33,16 +33,42 @@ public class WarehouseManager {
         current = w;
     }
 
-    public void addOwned(Item item){
+    public Purchase addOwned(Item item, String supplier){
         current.addItem(item,stockedIDs.get(item.getSKU()));
+        Purchase purchase = new Purchase(item,stockedIDs.get(item.getSKU()).getBuyPrice(), supplier);
+        current.addTransaction(purchase);
+        return purchase;
     }
-    public void addNew(Item item, ItemID itemID){
+    public Purchase addNew(Item item, ItemID itemID, String supplier){
         itemID.setSKU(nextSKU);
         item.setSKU(nextSKU);
         nextSKU++;
         stockedIDs.add(itemID);
         current.addItem(item,itemID);
+        Purchase purchase = new Purchase(item,itemID.getBuyPrice(), supplier);
+        current.addTransaction(purchase);
+        return purchase;
     }
+
+    public Sell sellItemInstance(int instanceID, String customer){
+        Item item = current.removeItemInstance(instanceID);
+        Sell sale = new Sell(item,stockedIDs.get(item.getSKU()).getSellPrice(),customer);
+        return sale;
+    }
+    public Sell sellItemQuantiy(int instanceID, int amount, String customer){
+        Item item = current.removeItemQuantity(instanceID,amount);
+        Sell sale = new Sell(item,stockedIDs.get(item.getSKU()).getSellPrice(),customer);
+        return sale;
+    }
+    public List<Sell> sellSKUQuantity(int SKU, int amount, String customer){
+        List<Item> items = current.removeSKUQuantity(SKU, amount);
+        List<Sell> sales = new ArrayList<>();
+        int price = stockedIDs.get(SKU).getSellPrice();
+        for(Item item : items)
+            sales.add(new Sell(item,price,customer));
+        return sales;
+    }
+
 
     public void tradeItems(String other, Set<Integer> currentInstances, Set<Integer> otherInstances){
         if(!warehouses.containsKey(other))

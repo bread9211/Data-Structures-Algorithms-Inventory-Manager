@@ -11,12 +11,7 @@ public class PerishableItem extends Item{
         super(num,pDate);
         exprDate = eDate;
     }
-    public int getStock(){
-        if(!checkExpr(LocalDate.now()))
-            return super.getStock();
-        return -1*super.getStock();
-
-    }
+    
     public LocalDate getExpr(){
         return exprDate;
     }
